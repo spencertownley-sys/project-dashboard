@@ -6,138 +6,99 @@ Version 1.0, 10 Nov 2026. Owner: Engineering.
 
 | Level | Tool | Scope | Runs |
 |---|---|---|---|
-| Static | ESLint (Next config), `tsc --noEmit` strict | Whole repo | CI on every push |
-| Unit | Vitest | `lib/rules.ts`, `lib/validation.ts`, `lib/auth.ts` mode logic, sync adapters with mocked `fetch`, alert derivation | CI |
-| Integration | Vitest with in-memory PGlite | Migrations, seed, every server action's database effect, `runSync` writes, cron and health route handlers | CI |
-| Smoke E2E | Playwright (Chromium) | Main journeys against `next dev` in open auth mode on a seeded PGlite | Locally before release |
-| Manual | Checklist in section 7 | Clerk sign-in, real tokens, responsive, dark mode, accessibility | Each phase exit |
+| Static | ESLint (`eslint-config-next`), `next typegen && tsc --noEmit` strict | Whole repo | CI on every push to `main` and every PR |
+| Unit | Vitest (`tests/metrics.test.ts`) | `lib/metrics.ts`, `lib/auth-core.ts`, `lib/alerts.ts`, `ciConclusion`, `matchProject` | CI |
+| Database | Vitest with in-memory PGlite (`tests/db.test.ts`) | Migrations, seed, queries, `runSync` with a fake `fetch` | CI |
+| Smoke E2E | Playwright (`e2e/smoke.spec.ts`), Desktop Chrome and Pixel 7 | Main journeys on a production build, open auth mode, fresh seeded PGlite | CI and before release |
+| Manual | Checklist in section 7 | Clerk sign-in, real tokens, dark mode, accessibility | Each phase exit |
 
-Every functional requirement in document 02 maps to at least one test below. Tests pin `today = '2026-11-10'` so seed-derived expectations are stable.
+Every functional requirement in document 02 maps to at least one automated or manual check below. The project rule (`CLAUDE.md`): run `npm run lint`, `npm run typecheck`, `npm test`, and `npm run test:e2e` when UI or actions changed, before pushing.
 
-## 2. Test data
+## 2. Test data and fakes
 
-- `tests/helpers/db.ts` exports `createTestDb()`: a fresh in-memory PGlite with `/drizzle` migrations applied, and `seedTestDb(db)` running the real seed against `data/inventory.json`.
-- Fixtures for adapters live in `tests/fixtures/{github,vercel,supabase}/*.json`, trimmed copies of real API responses.
-- No test touches the network; `fetch` is stubbed with `vi.stubGlobal`.
+- `createDb({ pgliteDir: "memory", url: "" })` gives a migrated in-memory database; `seed(db)` loads the real `data/inventory.json`.
+- Unit tests build small project fixtures with an `mk(...)` helper and pin `today` to a fixed date.
+- `runSync(db, env, fetch)` takes the environment and `fetch` as parameters; tests pass `{}` (all skipped) or a fake `fetch` that answers GitHub, Vercel and Supabase URLs with canned JSON. No test touches the network.
 
-## 3. Unit tests
+## 3. Unit tests (built)
 
-### 3.1 Rules (`tests/unit/rules.test.ts`)
-
-| Case | Expected |
-|---|---|
-| `finishScore` Spotted Zebra (3, 90, 6) | 45.0 |
-| `finishScore` TaskParty (4, 75, 50) | 6.0 |
-| `finishScore` Townley Photography (4, 80, 12) | 26.7 (rounding) |
-| `finishScore` with pct 0, value null, hours null, hours 0 | null for each |
-| `isStale` last push 2026-10-10 / 2026-10-11 / null | true / false / false |
-| `buildLanes` on seed | Exactly the lanes in document 11, section 3, including NimbusWatch over Downbeat on the tie |
-| `buildLanes` excludes archive and idea | Mariners Prediction Hub (score 4.0, 10 h) not in Quick wins |
-| `buildKpis` on seed | 26 / 11 / 67% / 827 / 9 / 11 and sub-lines as in document 11, section 2 |
-| `buildNeeds` on seed | 9 items in the documented order |
-| `buildNeeds` with signals | ci failure, vercel ERROR, supabase INACTIVE each add one risk item, listed before notes |
-| `applyStepToggle` | 6 − 1.5 = 4.5; 1 − 3 floors at 0; untick adds back; null stays null |
-| `planQueue` seed at 12 h | ETAs per document 11, section 7 (spot check rows 1, 3, 7, 19); all-done 2028-02-22 |
-| `planQueue` at 24 h | FrameVote Nov 17 |
-| `planQueue` null hours entry | contributes 0; ETA equals the previous entry's |
-| Timeline math | totalW 67 gives tickStep 8; bar width floor 0.6% |
-| `filterProjects` | counts per filter as in document 11, section 5.1; search "railway" returns the 7 projects tagged Railway |
-| `sortProjects` | nulls last both directions; status order; tie by name |
-| `groupIdeas` on seed | high-value 7 projects, other 14, parking lot 5; starred first |
-
-### 3.2 Validation (`tests/unit/validation.test.ts`)
-
-Boundary values for every rule in document 07, section 5.1 (pct −1, 0, 100, 101, 50.5; value 0, 1, 5, 6; `githubRepo` "a/b", "a", "a/b/c"; `supabaseRef` 20 lowercase letters vs 19 or uppercase; URL http vs https; empty string to null).
-
-### 3.3 Auth (`tests/unit/auth.test.ts`)
-
-| Env | Mode |
-|---|---|
-| Both Clerk keys | clerk |
-| No keys, NODE_ENV development | open |
-| No keys, NODE_ENV production | locked |
-| No keys, production, `ALLOW_NO_AUTH=1` | open |
-| No keys, production, `ALLOW_NO_AUTH=true` | locked |
-| One key only, production | locked |
-
-Owner matching: `OWNER_EMAILS=" A@x.com ,b@y.com"` admits `a@x.com` and `B@Y.COM`; rejects `c@z.com`; empty list rejects everyone. Clerk `auth()` and `currentUser()` are mocked.
-
-### 3.4 Adapters (`tests/unit/sync-*.test.ts`)
-
-| Case | Expected |
-|---|---|
-| Token unset | `status: 'skipped'`, `fetch` never called |
-| GitHub happy path | 5 signals written, `last_push` updated to the date of `pushed_at` |
-| GitHub check runs: none / all success / one failure / one in progress | `none` / `success` / `failure` / `pending` |
-| GitHub 404 on one of three projects | 2 updated, 1 error, status `error` |
-| GitHub 401 | adapter-level error, no further calls |
-| Vercel name resolution then deployment `ERROR` | signal `production.state = 'ERROR'` |
-| Vercel no deployments | `state: 'NONE'` |
-| Supabase list with linked ref INACTIVE | signal `INACTIVE`, capacity active counts only non-inactive projects |
-| Supabase ref missing from list | per-project error |
-| Error sanitizing | a message containing `Bearer abc123` is stored without the token |
-
-## 4. Integration tests (PGlite)
-
-| Test | Checks |
-|---|---|
-| Migrations | All 9 tables and 3 enums exist; CHECK constraints reject pct 101 and value 0 |
-| Seed | Counts 26 / 101 / 67 / 32 / 39 (27 linked) / 12 / 3 settings; queue positions 1 to 19; link fields null; running it twice leaves counts unchanged |
-| `toggleStep` | Tick and untick update `hours_left`, `done_at`, `updated_at` in one transaction; repeated tick is a no-op |
-| `addStep`, `deleteStep` | Position max + 1; hours_left unchanged |
-| `updateProject` | Partial update; empty strings to null; invalid input returns `VALIDATION` with fields and writes nothing; unknown id `NOT_FOUND` |
-| `addIdea`, `toggleIdeaStar`, `deleteIdea` | Project and parking-lot ideas |
-| `addSession` | Inserted with optional URL |
-| `setHousekeepingDecision` | `decided_at` set and cleared on undo |
-| `saveQueue` | Positions rewritten, others nulled; duplicates and unknown ids rejected |
-| `setHoursPerWeek` | Upsert; 0 and 81 rejected |
-| Unauthorized | With `getOwner` mocked to `not_authorized`, every action returns `UNAUTHORIZED` and writes nothing |
-| `runSync` | Inserts and finishes a `sync_runs` row; `ok` true when all skipped; `ok` false and `error` set with one adapter error; signals upserted, not duplicated, on a second run |
-| Cron route | 503 without `CRON_SECRET`; 401 with a wrong or missing header; 200 with the right one |
-| Health route | 200 with a working database; 503 when the query throws |
-| Cascade | Deleting a project removes steps, sessions, signals; nulls ideas and components |
-
-## 5. Smoke E2E (`e2e/smoke.spec.ts`)
-
-Playwright `webServer` runs `npm run db:migrate && npm run db:seed && npm run dev` with a fresh temp `PGLITE_DIR` and no Clerk keys (open mode).
-
-1. Overview: six KPI cells; "Spotted Zebra" first in Quick wins; Needs you shows 9 items; "Auth disabled" pill visible.
-2. Projects: click "Games" filter, see 4 rows; search "railway", see Mentionful; sort by Hours left, first row is Amanda Williams Portfolio (4 h).
-3. Detail: open Spotted Zebra; tick "Add 10–20 gig photos"; meter shows "4.5 h left"; untick; "6 h left".
-4. Edit: set value to 5 and save; header shows "value 5/5".
-5. Planner: move Amanda Williams Portfolio up; reload; it is first.
-6. Housekeeping: approve "timeline_web_app.py"; chip "Approved" appears; Undo restores the buttons.
-7. Every top bar tab loads without a console error.
-
-## 6. Performance and quality budgets
-
-| Budget | Target | How measured |
+| Group | Cases | Requirement |
 |---|---|---|
-| Overview server render | under 500 ms P95 on Vercel with Neon | Vercel logs `ms` field |
-| Server action round trip | under 1 s | Manual check, Playwright timing |
-| Full sync | under 60 s | `sync_runs` duration |
-| JavaScript on Overview | under 150 KB gzipped first load | `next build` output |
-| Lighthouse (mobile) Overview | Performance ≥ 90, Accessibility 100 | Manual run at phase exit |
+| `finishScore` | value × completion ÷ hours × 100 to one decimal; null when an input is missing or hours is zero | FR-5 |
+| `focusLanes` | sorts projects into lanes by hours and value; leaves out archived projects and launch pushes over 60 h | FR-5 |
+| `planQueue` | stacks projects back to back; ETAs round up to whole weeks (first ETA 2026-11-17, finish 2026-11-24 in the fixture) | FR-17 |
+| Dates and summary | days since a push; stale threshold; portfolio summary counts, average, hours, weeks, stale | FR-4 |
+| `hoursAfterToggle` | subtract when done, add back when undone, floor at zero, null stays null | FR-12 |
+| Auth | Clerk only with both keys; open in development or with `ALLOW_NO_AUTH=1`; closed in production; owner emails case-insensitive; empty list denies everyone | FR-1, FR-2 |
+| Alerts and CI | check runs roll up to none, failure, pending, success; notes and failing CI, deploy and Supabase signals become alerts in order | FR-6, FR-26 |
+| `matchProject` | exact names, unique prefixes and trailing "?" link; shared ("A, B") or unknown labels stay unlinked | FR-14 |
+
+## 4. Database tests (built)
+
+| Test | Checks | Requirement |
+|---|---|---|
+| Seed loads the inventory | 26 projects; TaskParty linked to `spencertownley-sys/ProjectManager` and Vercel `taskparty`; steps and sessions present; more than 30 components | FR-22 |
+| Seed is idempotent | `seedIfEmpty` returns false and counts are unchanged | FR-22 |
+| Branch-hosted repos | Strata maps to `spencertownley-sys/Database`; PromoVault has no repo | FR-22 |
+| First open step | Quiz Platform's is "Point the Railway web service at main" | FR-5 |
+| Needs-you notes | Quiz Platform's note is an alert of kind `needs` | FR-6 |
+| Sync skipped | No tokens: no fetch, `ok = true`, GitHub `skipped`, run row finished | FR-24 |
+| Sync stores signals | With fakes: last push updated to 2026-11-09; 2 open PRs; CI failure; Vercel READY; CI alert for TaskParty, paused-database alert for Chronologue, repo-not-found alert for FrameVote; a second run upserts instead of duplicating | FR-24, FR-26 |
+
+## 5. Smoke E2E (built)
+
+`playwright.config.ts`: one worker, `webServer` runs `rm -rf .data/e2e && npm run build && npm start -- -p 3100` with `ALLOW_NO_AUTH=1` and `PGLITE_DIR=.data/e2e`, waits on `/api/health`. The `desktop` project runs every test; the `phone` project (Pixel 7) runs tests tagged `@phone`.
+
+| Test | Asserts | Requirement |
+|---|---|---|
+| Overview `@phone` | heading, "Projects tracked", Needs you, a Spotted Zebra card; no horizontal overflow on a phone | FR-4 to FR-6, NFR-7 |
+| Projects table | Games filter shows Smoosh and hides TaskParty; search "framevote" and open it; architecture text visible | FR-8 to FR-10 |
+| Step toggle | Spotted Zebra 6 h; tick the 0.5 h step gives 5.5 h; untick gives 6 h | FR-12 |
+| Edit form | 150% blocked by the browser; 75% saves with "Saved" and updates the meter | FR-11 |
+| Add step and idea | New step appears as a checkbox; new parking-lot idea appears on /ideas | FR-12, FR-20 |
+| Planner | Move Spotted Zebra down, reload, order kept; move it back | FR-18 |
+| Housekeeping | Approve timeline_web_app.py, "Approved" shown, Undo restores the buttons | FR-21 |
+| Infrastructure and cron | "2 of 2 active", R2 bucket row visible; `/api/cron/sync` without a bearer is 401 | FR-15, FR-25 |
+
+## 6. Gaps to cover next (not yet written)
+
+| Gap | Proposed test |
+|---|---|
+| Server actions against the database | Call `toggleStep`, `saveQueue`, `setHousekeepingDecision`, `updateProject` with `requireOwner` mocked; assert rows, idempotent toggle, 0-based queue positions |
+| Not-owner paths | With Clerk mocked, a non-owner is redirected to `/not-authorized` from a page and from an action, and nothing is written |
+| Closed mode | Production build without keys and without `ALLOW_NO_AUTH`: app routes return the setup page with 503; `/api/health` is 200 |
+| Cron success path | Valid bearer returns 200, or 207 when a source errors |
+| Seed numbers | Exact counts (101 steps, 67 ideas, 32 sessions, 39 components with 34 linked, 12 housekeeping items) and the lanes and KPIs in document 11 |
+| Ideas star | Toggle a parking-lot star and check ordering |
 
 ## 7. Manual checklist (each phase exit)
 
-- [ ] Clerk sign-in with the owner account reaches the Overview; a second account sees not-authorized and can sign out.
-- [ ] Production without keys shows the setup page (test on a preview with keys removed).
-- [ ] Every screen at 360 px, 768 px and 1240 px: no horizontal page scroll; tables and timeline scroll in their panels.
-- [ ] Dark mode via OS setting: all text readable; pills and bars visible.
+- [ ] Clerk sign-in with the owner account reaches the Overview; a second account lands on "This dashboard is private" and can sign out.
+- [ ] A preview without Clerk keys shows "Sign-in isn't set up yet" on every app route.
+- [ ] Every screen at 360 px, 768 px and 1240 px: no horizontal page scroll; the table and timeline scroll inside their panels.
+- [ ] Dark mode via the OS setting: text readable; pills, bars and signal chips visible.
 - [ ] Keyboard only: tabs, filters, sort headers, checkboxes, queue buttons, forms and housekeeping buttons reachable with a visible focus ring.
-- [ ] Screen reader spot check (VoiceOver): checkbox labels are step titles; move buttons announce the project.
-- [ ] Contrast check of `--muted`, `--accent` and the status foregrounds in both themes (document 09, section 9).
-- [ ] Phase 2: real tokens set; Sync now completes; a known failing repo shows a CI alert.
+- [ ] Screen reader spot check: checkboxes read the step title; queue buttons name the project.
+- [ ] Contrast of `--muted`, `--accent` and the status foregrounds in both themes (document 09, section 9).
+- [ ] Phase 2: real tokens set; Sync now completes; the Chronologue paused-database alert and any CI failures appear in Needs you.
 
-## 8. Defect severity
+## 8. Performance budgets
+
+| Budget | Target | How measured |
+|---|---|---|
+| Overview server render | under 500 ms P95 on Vercel with Neon | Vercel logs |
+| Server action round trip | under 1 s | Manual, Playwright timing |
+| Full sync | under 60 s | `sync_runs` start to finish |
+| Lighthouse (mobile) Overview | Performance ≥ 90, Accessibility 100 | Manual at phase exit |
+
+## 9. Defect severity
 
 | Severity | Definition | Response |
 |---|---|---|
-| S1 | Data shown to a non-owner, data loss, or the app unusable | Fix before anything else; roll back if needed |
+| S1 | Data shown to a non-owner, data loss, or the app unusable | Fix first; roll back if needed |
 | S2 | A rule computes wrong numbers (score, hours, ETA) or an action fails | Fix in the current phase |
-| S3 | Visual or copy issue, a sync source failing with a clear message | Backlog |
+| S3 | Visual or copy issue; a sync source failing with a clear message | Backlog |
 
-## 9. Definition of done
+## 10. Definition of done
 
-A step in document 16 is done when its code is merged to `main`, CI is green, the tests listed for it pass, the relevant document is updated if behavior changed, and the production deployment works.
+A build step (document 16) is done when its code is on `main`, CI is green, its tests pass, the relevant document is updated if behavior changed, and the production deployment works.
