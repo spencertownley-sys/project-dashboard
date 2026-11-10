@@ -1,0 +1,781 @@
+<title>Project Control Room</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky tab bar over a 1240px work surface; summary strip, then lettered sections (A–I) the owner can approve or cut one by one. */
+:root{
+  --bg:#f5f6f4; --surface:#ffffff; --sunk:#eceeea; --line:#dadfd8; --fg:#17201b; --muted:#5d6a62; --faint:#8b968f;
+  --accent:#0d6b5e; --accent-soft:#d9ece7; --accent-fg:#ffffff;
+  --live:#1f7a3f; --live-bg:#dcf0e2; --preview:#1d5fae; --preview-bg:#dde9f8; --build:#7b4bb5; --build-bg:#ece3f7;
+  --stall:#9a6400; --stall-bg:#f8ebcf; --archive:#7a7f7c; --archive-bg:#e7e9e7; --risk:#b3362c; --risk-bg:#f7e0dd;
+  --note:#fff6d6; --note-line:#e7cf7a; --note-fg:#5a4710;
+  --f-ui:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#101512; --surface:#171d19; --sunk:#1e2621; --line:#2b352f; --fg:#e6ece8; --muted:#9daaa2; --faint:#6f7c74;
+  --accent:#4cc3ad; --accent-soft:#16332d; --accent-fg:#06201b;
+  --live:#6fd38f; --live-bg:#163222; --preview:#82b6f2; --preview-bg:#172a42; --build:#c3a2ee; --build-bg:#2a2140;
+  --stall:#f0bf5c; --stall-bg:#3a2d10; --archive:#a7aeaa; --archive-bg:#262c28; --risk:#f08a80; --risk-bg:#3d1c19;
+  --note:#2f2a14; --note-line:#6b5c22; --note-fg:#ecd98f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101512; --surface:#171d19; --sunk:#1e2621; --line:#2b352f; --fg:#e6ece8; --muted:#9daaa2; --faint:#6f7c74;
+  --accent:#4cc3ad; --accent-soft:#16332d; --accent-fg:#06201b;
+  --live:#6fd38f; --live-bg:#163222; --preview:#82b6f2; --preview-bg:#172a42; --build:#c3a2ee; --build-bg:#2a2140;
+  --stall:#f0bf5c; --stall-bg:#3a2d10; --archive:#a7aeaa; --archive-bg:#262c28; --risk:#f08a80; --risk-bg:#3d1c19;
+  --note:#2f2a14; --note-line:#6b5c22; --note-fg:#ecd98f; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+a{color:var(--accent)}
+h1,h2,h3{text-wrap:balance;margin:0;letter-spacing:-0.01em}
+h1{font-size:22px;font-weight:700}
+h2{font-size:18px;font-weight:650}
+h3{font-size:14px;font-weight:600}
+p{margin:0}
+.mono{font-family:var(--f-mono);font-size:12px}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1240px;margin:0 auto}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--surface);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:20px;min-height:56px;flex-wrap:wrap;padding-block:8px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700}
+.brand .mark{width:26px;height:26px;border-radius:7px;background:var(--accent);display:grid;place-items:center;color:var(--accent-fg);font-family:var(--f-mono);font-size:12px}
+.tabs{display:flex;gap:2px;overflow-x:auto;flex:1;min-width:0;scrollbar-width:none}
+.tabs a{padding:6px 10px;border-radius:7px;text-decoration:none;color:var(--muted);white-space:nowrap;font-weight:500}
+.tabs a:hover{background:var(--sunk);color:var(--fg)}
+.tabs a.on{background:var(--accent-soft);color:var(--accent)}
+.sync{font-size:12px;color:var(--muted);white-space:nowrap}
+
+/* mockup banner + annotations */
+.banner{background:var(--note);border-bottom:1px solid var(--note-line);color:var(--note-fg)}
+.banner .wrap{padding-block:10px;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.banner strong{font-weight:700}
+.tag{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:6px;background:var(--note);border:1px solid var(--note-line);color:var(--note-fg);font-family:var(--f-mono);font-size:11px;font-weight:600}
+.anno{display:flex;gap:10px;align-items:flex-start;background:var(--note);border:1px dashed var(--note-line);color:var(--note-fg);padding:8px 12px;border-radius:8px;font-size:12.5px;max-width:80ch}
+
+main{display:grid;gap:36px;padding-block:24px 64px}
+section{display:grid;gap:14px;scroll-margin-top:80px}
+.sec-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sec-head h2{margin-right:auto}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.pad{padding:16px}
+
+/* KPI strip */
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.kpi{background:var(--surface);padding:14px 16px;display:grid;gap:2px}
+.kpi .v{font-size:26px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-0.02em}
+.kpi .l{font-size:12px;color:var(--muted)}
+.kpi .s{font-size:11.5px;color:var(--faint)}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:480px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* overview grid */
+.two{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
+.lanes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:700px){.lanes{grid-template-columns:minmax(0,1fr)}}
+.lane{display:grid;gap:8px;align-content:start}
+.lane h3{display:flex;justify-content:space-between;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:6px;cursor:pointer;text-align:left}
+.qcard:hover{border-color:var(--accent)}
+.qcard .row{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.qcard .nm{font-weight:600}
+.qcard .nx{font-size:12.5px;color:var(--muted)}
+
+.inbox{display:grid}
+.inbox li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;padding:10px 16px;border-top:1px solid var(--line)}
+.inbox li:first-child{border-top:0}
+.inbox ul{list-style:none;margin:0;padding:0}
+.dot{width:8px;height:8px;border-radius:50%;margin-top:7px;background:var(--stall)}
+.dot.risk{background:var(--risk)}
+.inbox .p{font-weight:600;font-size:13px}
+.inbox .t{font-size:13px;color:var(--muted)}
+
+/* pills and chips */
+.pill{display:inline-flex;align-items:center;gap:5px;padding:1px 8px;border-radius:99px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.s-live{color:var(--live);background:var(--live-bg)}
+.s-preview{color:var(--preview);background:var(--preview-bg)}
+.s-building{color:var(--build);background:var(--build-bg)}
+.s-stalled{color:var(--stall);background:var(--stall-bg)}
+.s-archive,.s-idea,.s-unknown{color:var(--archive);background:var(--archive-bg)}
+.chip{display:inline-block;padding:1px 7px;border:1px solid var(--line);border-radius:6px;font-size:11.5px;color:var(--muted);background:var(--surface);white-space:nowrap}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+
+/* bars */
+.bar{height:6px;border-radius:99px;background:var(--sunk);overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+
+/* filters */
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.fbtn{border:1px solid var(--line);background:var(--surface);padding:4px 10px;border-radius:99px;font-size:12.5px;cursor:pointer;color:var(--muted)}
+.fbtn[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.search{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 10px;font:inherit;color:var(--fg);min-width:0;width:200px}
+
+/* table */
+.tscroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:880px}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+th button{background:none;border:0;padding:0;cursor:pointer;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--sunk)}
+tbody tr.sel td{background:var(--accent-soft)}
+tr:last-child td{border-bottom:0}
+.pname{font-weight:600}
+.prepo{font-family:var(--f-mono);font-size:11.5px;color:var(--faint)}
+.pct{display:flex;align-items:center;gap:8px}
+.pct .n{width:34px;text-align:right;font-variant-numeric:tabular-nums;font-size:12.5px}
+
+/* detail */
+.detail{display:grid;gap:0}
+.dhead{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;padding:18px 18px 14px;border-bottom:1px solid var(--line)}
+.dhead .t{display:grid;gap:4px;flex:1;min-width:220px}
+.dhead .meter{display:grid;gap:6px;min-width:220px}
+.dhead .meter .big{font-size:28px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.dgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border-radius:0 0 var(--r) var(--r);overflow:hidden}
+.dgrid > div{padding:16px 18px;background:var(--surface);display:grid;gap:10px;align-content:start;min-width:0}
+@media (max-width:900px){.dgrid{grid-template-columns:minmax(0,1fr)}.dgrid > div{grid-column:auto!important}}
+.kv{display:grid;grid-template-columns:96px minmax(0,1fr);gap:4px 10px;font-size:13px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;overflow-wrap:anywhere}
+.lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.steps li{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:8px;align-items:start;font-size:13px}
+.steps input{margin:2px 0 0;accent-color:var(--accent)}
+.steps .h{font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+.plain{margin:0;padding-left:18px;display:grid;gap:4px;font-size:13px}
+.arch{display:flex;gap:6px;align-items:stretch;flex-wrap:wrap}
+.arch .node{flex:1 1 140px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--sunk);display:grid;gap:2px;min-width:0}
+.arch .node b{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.arch .node span{font-size:12.5px;overflow-wrap:anywhere}
+.docdots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 10px;font-size:12.5px}
+.docdots span::before{content:"○ ";color:var(--faint)}
+.docdots span.y::before{content:"● ";color:var(--accent)}
+.docdots span:not(.y){color:var(--faint)}
+
+/* infra */
+.infra{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.prov{display:grid;gap:0;align-content:start}
+.prov header{display:flex;justify-content:space-between;align-items:baseline;padding:12px 14px;border-bottom:1px solid var(--line)}
+.prov ul{list-style:none;margin:0;padding:0}
+.prov li{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:2px 10px;padding:8px 14px;border-top:1px solid var(--line);font-size:13px}
+.prov li:first-child{border-top:0}
+.prov li .r{font-family:var(--f-mono);font-size:12px;overflow-wrap:anywhere}
+.prov li .pj{color:var(--muted);font-size:12px;text-align:right}
+.prov li .nt{grid-column:1/-1;font-size:12px;color:var(--muted)}
+.warn{color:var(--stall);font-weight:600}
+.cap{display:flex;align-items:center;gap:8px;font-size:12px}
+.cap .bar{width:80px}
+.cap .bar i{background:var(--stall)}
+
+/* planner */
+.planner{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:16px;align-items:start}
+@media (max-width:900px){.planner{grid-template-columns:minmax(0,1fr)}}
+.ctl{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--line)}
+.ctl label{font-size:12.5px;color:var(--muted)}
+.ctl input[type=range]{accent-color:var(--accent);width:140px}
+.queue{list-style:none;margin:0;padding:0}
+.queue li{display:grid;grid-template-columns:22px minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:7px 14px;border-top:1px solid var(--line);font-size:13px}
+.queue li:first-child{border-top:0}
+.queue .ix{font-family:var(--f-mono);font-size:11px;color:var(--faint)}
+.queue .eta{font-family:var(--f-mono);font-size:12px;color:var(--muted);white-space:nowrap}
+.mv{display:flex;gap:2px}
+.mv button{border:1px solid var(--line);background:var(--surface);border-radius:5px;width:24px;height:22px;cursor:pointer;font-size:11px;line-height:1;color:var(--muted)}
+.mv button:hover{border-color:var(--accent);color:var(--accent)}
+.gantt{overflow-x:auto}
+.gantt .inner{min-width:620px;padding:12px 14px;display:grid;gap:5px}
+.grow{display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px;align-items:center;font-size:12px}
+.grow .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track{position:relative;height:16px}
+.track i{position:absolute;top:2px;height:12px;border-radius:4px;background:var(--accent);opacity:.85}
+.ticks{position:relative;height:18px;margin-left:158px;font-family:var(--f-mono);font-size:10.5px;color:var(--faint)}
+.ticks span{position:absolute;top:0;transform:translateX(-50%)}
+.gridlines{position:absolute;inset:0;pointer-events:none}
+
+/* ideas + housekeeping */
+.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:900px){.cols3{grid-template-columns:minmax(0,1fr)}}
+.list{list-style:none;margin:0;padding:0}
+.list li{padding:9px 14px;border-top:1px solid var(--line);font-size:13px;display:grid;gap:2px}
+.list li:first-child{border-top:0}
+.list .sub{font-size:12px;color:var(--muted)}
+.cardhead{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+
+/* plan */
+.plan{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.plan{grid-template-columns:minmax(0,1fr)}}
+.docs{list-style:none;margin:0;padding:0;counter-reset:d}
+.docs li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;padding:8px 14px;border-top:1px solid var(--line);font-size:13px}
+.docs li:first-child{border-top:0}
+.docs .f{font-family:var(--f-mono);font-size:12px;color:var(--accent)}
+.docs .d{grid-column:2;font-size:12px;color:var(--muted)}
+.decide{display:grid;gap:10px;padding:14px}
+.decide .q{display:grid;gap:4px;font-size:13px}
+.decide .q b{font-weight:600}
+.stack{display:grid;gap:6px;padding:14px}
+.stack .node{display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px;font-size:13px;padding:6px 0;border-top:1px solid var(--line)}
+.stack .node:first-child{border-top:0}
+.stack .node b{color:var(--muted);font-weight:500}
+.phases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:700px){.phases{grid-template-columns:minmax(0,1fr)}}
+.phase{padding:14px;display:grid;gap:8px;align-content:start}
+.phase .when{font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+
+<div class="banner"><div class="wrap gut">
+  <strong>Layout mockup for approval.</strong>
+  <span>The data is real, pulled on 10 Nov 2026 from 22 GitHub repos, Vercel, Supabase, and your Claude Code sessions. Completion %, hours and value scores are first-pass estimates for you to correct. The lettered tags <span class="tag">A</span>–<span class="tag">I</span> mark sections you can approve, change or cut.</span>
+</div></div>
+
+<header class="top"><div class="wrap gut">
+  <div class="brand"><span class="mark">PC</span>Project Control Room</div>
+  <nav class="tabs" aria-label="Sections">
+    <a href="#overview" class="on">Overview</a><a href="#projects">Projects</a><a href="#infra">Infrastructure</a><a href="#planner">Planner</a><a href="#ideas">Ideas</a><a href="#housekeeping">Housekeeping</a><a href="#plan">Build plan</a>
+  </nav>
+  <span class="sync mono">synced 10 Nov · 06:52</span>
+</div></header>
+
+<main class="wrap gut">
+
+<!-- A: summary -->
+<section id="overview">
+  <div class="sec-head"><span class="tag">A</span><h2>Portfolio at a glance</h2></div>
+  <div class="kpis" id="kpis"></div>
+</section>
+
+<!-- B: focus + needs you -->
+<section>
+  <div class="sec-head"><span class="tag">B</span><h2>What to work on next</h2><span class="muted" style="font-size:12.5px">Finish score = value × completion ÷ hours left</span></div>
+  <div class="two">
+    <div class="lanes" id="lanes"></div>
+    <div class="panel inbox">
+      <div class="cardhead"><h3>Needs you</h3><span class="muted mono" id="needs-count"></span></div>
+      <ul id="needs"></ul>
+    </div>
+  </div>
+</section>
+
+<!-- C: projects table -->
+<section id="projects">
+  <div class="sec-head"><span class="tag">C</span><h2>All projects</h2>
+    <input class="search" id="q" type="search" placeholder="Search name, repo, host…" aria-label="Search projects">
+  </div>
+  <div class="filters" id="filters"></div>
+  <div class="panel tscroll">
+    <table>
+      <thead><tr>
+        <th><button data-sort="name">Project</button></th>
+        <th><button data-sort="status">Status</button></th>
+        <th><button data-sort="pct">Complete</button></th>
+        <th><button data-sort="hrs">Hours left</button></th>
+        <th><button data-sort="score">Finish score</button></th>
+        <th>Hosting and data</th>
+        <th><button data-sort="last">Last push</button></th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- D: project detail -->
+<section id="detail-sec">
+  <div class="sec-head"><span class="tag">D</span><h2>Project detail</h2><span class="muted" style="font-size:12.5px">Select any row above. In the app this opens as a side panel.</span></div>
+  <div class="panel detail" id="detail"></div>
+</section>
+
+<!-- E: infrastructure -->
+<section id="infra">
+  <div class="sec-head"><span class="tag">E</span><h2>Infrastructure and domains</h2><span class="muted" style="font-size:12.5px">Every Worker, database, service and domain, and the project that owns it</span></div>
+  <div class="infra" id="infra-grid"></div>
+</section>
+
+<!-- F: planner -->
+<section id="planner">
+  <div class="sec-head"><span class="tag">F</span><h2>Capacity planner</h2><span class="muted" style="font-size:12.5px">Reorder the queue and set your weekly hours to see finish dates</span></div>
+  <div class="planner">
+    <div class="panel">
+      <div class="ctl">
+        <label for="hpw">Hours per week</label>
+        <input id="hpw" type="range" min="4" max="40" step="1" value="12">
+        <span class="mono num" id="hpw-v">12 h</span>
+        <span class="muted" style="font-size:12px;margin-left:auto" id="total-eta"></span>
+      </div>
+      <ol class="queue" id="queue"></ol>
+    </div>
+    <div class="panel gantt"><div class="inner" id="gantt"></div></div>
+  </div>
+</section>
+
+<!-- G: ideas -->
+<section id="ideas">
+  <div class="sec-head"><span class="tag">G</span><h2>Ideas backlog</h2></div>
+  <div class="cols3" id="ideas-grid"></div>
+</section>
+
+<!-- H: housekeeping -->
+<section id="housekeeping">
+  <div class="sec-head"><span class="tag">H</span><h2>Housekeeping</h2><span class="muted" style="font-size:12.5px">Cleanup that makes the rest easier to manage</span></div>
+  <div class="cols3" id="hk"></div>
+</section>
+
+<!-- I: build plan -->
+<section id="plan">
+  <div class="sec-head"><span class="tag">I</span><h2>Build plan for this dashboard</h2><span class="muted" style="font-size:12.5px">What gets built after you approve the layout</span></div>
+  <div class="phases">
+    <div class="panel phase"><span class="when">Phase 1 · about 3 days</span><h3>Read-only dashboard</h3><p class="muted" style="font-size:13px">Sections A–H from a seeded inventory of all 26 projects. Edit status, %, hours, value and next steps in the app. Private behind your sign-in.</p></div>
+    <div class="panel phase"><span class="when">Phase 2 · about 4 days</span><h3>Live sync</h3><p class="muted" style="font-size:13px">A nightly job pulls commits, PRs and CI from GitHub, deployments from Vercel, Railway and Cloudflare, and Supabase project health. It flags stale projects and failed deploys.</p></div>
+    <div class="panel phase"><span class="when">Phase 3 · about 3 days</span><h3>AI assist</h3><p class="muted" style="font-size:13px">Claude reads each repo's docs and recent commits weekly, proposes updated completion %, next steps and risks for you to accept, and drafts a Monday plan.</p></div>
+  </div>
+  <div class="plan">
+    <div class="panel">
+      <div class="cardhead"><h3>Document suite</h3><span class="muted" style="font-size:12px">Same 16-part set as TaskParty</span></div>
+      <ul class="docs" id="docs"></ul>
+    </div>
+    <div style="display:grid;gap:16px">
+      <div class="panel">
+        <div class="cardhead"><h3>Proposed architecture</h3><span class="muted" style="font-size:12px">Reuses tools you already run</span></div>
+        <div class="stack">
+          <div class="node"><b>App</b><span>Next.js 16 App Router, React 19, Tailwind 4, shadcn/ui, Drizzle</span></div>
+          <div class="node"><b>Host</b><span>Vercel (already connected), Vercel Cron for nightly sync</span></div>
+          <div class="node"><b>Database</b><span>Neon Postgres through the Vercel Marketplace. Your Supabase free plan is at 2 of 2 active projects.</span></div>
+          <div class="node"><b>Auth</b><span>Clerk, locked to your account only</span></div>
+          <div class="node"><b>Sync sources</b><span>GitHub API, Vercel API, Railway GraphQL, Cloudflare API, Supabase Management API</span></div>
+          <div class="node"><b>AI</b><span>Claude API (Sonnet 5.5) for weekly repo reviews and plan drafts</span></div>
+          <div class="node"><b>Repo</b><span class="mono">spencertownley-sys/project-dashboard</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="cardhead"><h3>Decisions for you</h3></div>
+        <div class="decide">
+          <div class="q"><b>1. Where should the data live?</b><span class="muted">Recommended: Neon Postgres, so edits save from the app. The alternative is a YAML file in the repo, edited through pull requests.</span></div>
+          <div class="q"><b>2. Which live syncs do you want in Phase 2?</b><span class="muted">GitHub, Vercel and Supabase already work here. Railway and Cloudflare each need an API token you add once.</span></div>
+          <div class="q"><b>3. Claude chat projects</b><span class="muted">claude.ai Projects can't be read from here, so they'd be a link field you fill in. Claude Code sessions are already matched to projects.</span></div>
+          <div class="q"><b>4. Value scores</b><span class="muted">I guessed 1–5 per project. Your scores drive the finish score and queue order.</span></div>
+          <div class="q"><b>5. Cleanup actions</b><span class="muted">Approve or skip each item in section H. I won't archive or move anything without your go-ahead.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+const TODAY = new Date('2026-11-10T12:00:00');
+const STATUS = {live:'Live',preview:'Preview URL',building:'Building',stalled:'Stalled',archive:'Archive',idea:'Idea',unknown:'Not assessed'};
+const DOCKEYS = [['prd','PRD'],['tech','Tech spec'],['api','API design'],['ui','UI/UX notes'],['launch','Launch checklist'],['claude','CLAUDE.md']];
+
+const P = [
+{id:'taskparty',name:'TaskParty',repo:'ProjectManager',cat:'SaaS',status:'preview',pct:75,hrs:50,value:4,last:'2026-11-08',
+ sum:'Project and task suite in the Asana and Linear space, with a Microsoft 365 look.',
+ urls:['taskparty-spencer-s-projects18.vercel.app','mail.taskparty.app (planned)'],
+ sessions:['TaskParty views implementation','System review and improvements','Preview display'],
+ arch:{Client:'Next.js 16 · React 19 · Tailwind 4 · shadcn on Fluent tokens',Host:'Vercel · project taskparty',Data:'Supabase “TaskParty” (us-west-1) · Drizzle · Realtime',Auth:'Clerk Organizations',Services:'Inngest jobs · PostHog · Resend and Stripe pending'},
+ hostTags:['Vercel','Supabase','Clerk','Inngest'],docs:{prd:1,tech:1,api:1,ui:1,launch:0,claude:1},docNote:'16-part suite plus HANDOFF.md',
+ next:[['Create Clerk instances, test real sign-in, repair migration history',8],['Send notification email through Inngest and Resend',8],['Attachment upload to Supabase Storage',6],['Responsive, WCAG 2.2 AA and performance pass',16],['Landing page and beta onboarding for 10 testers',8]],
+ ideas:['MCP server so agents can read and update tasks','AI task drafting and thread summaries','Teams connector with task cards'],
+ risks:['Real sign-in has never run end to end','Hosted migration history doesn’t match the files','Very large scope for one builder']},
+{id:'nimbus',name:'NimbusWatch',repo:'AllClear',cat:'SaaS',status:'preview',pct:80,hrs:30,value:3,last:'2026-10-10',
+ sum:'Calm dashboard of weather, wildfire smoke, quakes, air quality and NWS alerts for saved locations.',
+ urls:['web-production-41f16.up.railway.app'],sessions:['AllClear app from Claude chat'],
+ arch:{Client:'Next.js 16 · Leaflet · Tailwind 4',Host:'Railway web + worker (Vercel config ready)',Data:'Supabase “allclear” · PostGIS · 9 migrations · Edge Function seed-snapshot',Auth:'Supabase Auth',Services:'NWS, FIRMS, USGS, AirNow, NHC and 10 more feeds · Resend · Web Push · Sentry'},
+ hostTags:['Railway','Supabase','GH Actions cron'],docs:{prd:1,tech:1,api:1,ui:1,launch:1,claude:1},
+ next:[['Deploy the worker with all keys, confirm the cache fills, retire the keepalive',4],['Buy a domain and choose Vercel or Railway for the web app',3],['Sentry and alerts for stale pollers',4],['Launch checklist: RLS check, a11y, safety disclaimer',10],['Playwright smoke test from sign-up to alert',6]],
+ ideas:['Family safety circle that shares check-in status','AI morning briefing for each location','Evacuation zone and road closure overlays'],
+ risks:['Production secrets are missing, so the worker isn’t running','Free Supabase project pauses without the keepalive','Open-Meteo is licensed for non-commercial use only'],
+ needs:'Rename the GitHub repo and buy the domain'},
+{id:'chrono',name:'Chronologue',repo:'chronologue',cat:'SaaS',status:'building',pct:85,hrs:20,value:3,last:'2026-10-10',
+ sum:'Build, import, filter and share timelines with an Excel template round trip.',
+ urls:[],sessions:[],
+ arch:{Client:'Next.js 16 · Base UI · vis-timeline · SheetJS',Host:'Not chosen (Dockerfile ready)',Data:'Supabase · likely the paused “Make Me A Timeline” project',Auth:'Supabase Auth + Google',Services:'Sentry (optional)'},
+ hostTags:['Docker','Supabase'],docs:{prd:1,tech:1,api:1,ui:1,launch:1,claude:1},
+ next:[['Pick a host, create the prod database, push migrations, set the domain',5],['Google OAuth, redirect URLs and an SMTP sender',3],['Privacy and terms pages, CI workflow',4],['Launch checklist (0 of 59 done)',8]],
+ ideas:['PNG and PDF export for presentations','Pull dated events out of pasted text or a PDF with AI','Embeddable public timeline widget'],
+ risks:['Supabase free plan is full (2 of 2 active)','No host or domain decided','BCE and month-only dates unresolved']},
+{id:'framevote',name:'FrameVote',repo:'framevote',cat:'Consumer app',status:'live',pct:90,hrs:13,value:3,last:'2026-11-04',
+ sum:'Share a photo batch, group near-duplicates, collect votes and get a fair leaderboard.',
+ urls:['framevote.com','shortlist.spencertownley.workers.dev'],sessions:['Framevote deployment','Shortlist photo voting app'],
+ arch:{Client:'React 18 SPA · Vite 6 · Tailwind 4',Host:'Cloudflare Worker “shortlist” (Hono API + assets)',Data:'D1 “shortlist” · R2 “shortlist-photos”',Auth:'None: owner token and one ballot per device',Services:'PostHog'},
+ hostTags:['Cloudflare Worker','D1','R2'],docs:{prd:0,tech:0,api:0,ui:0,launch:0,claude:0},
+ next:[['Poll expiry and a Cron Trigger that purges D1 rows and R2 photos',5],['Rate limits or Turnstile on poll creation and uploads',3],['Privacy page and an owner “delete poll” button',3],['CI that runs tests and wrangler deploy',2]],
+ ideas:['HEIC support through Cloudflare Images','Flag blurry or eyes-closed frames with AI','Download the winners as a ZIP album'],
+ risks:['R2 storage grows with no cleanup','Device ballots can be spoofed','Deploys run by hand from your machine']},
+{id:'quiz',name:'Quiz Platform',repo:'quizplatform',cat:'SaaS',status:'preview',pct:80,hrs:28,value:5,last:'2026-11-08',
+ sum:'Personality and brain quizzes with a free result and paid one-time reports. Brand still open.',
+ urls:['web-production-1692a.up.railway.app'],sessions:['Quiz monetization website'],
+ arch:{Client:'Next.js 16 · Tailwind 4 · react-pdf · next/og cards',Host:'Railway (Vercel config also present)',Data:'Postgres · Drizzle',Auth:'Clerk Core 3',Services:'Stripe Checkout, Billing, Tax · Resend · PostHog · GA4'},
+ hostTags:['Railway','Postgres','Clerk','Stripe'],docs:{prd:1,tech:0,api:0,ui:0,launch:0,claude:1},docNote:'REQUIREMENTS, QUIZ_CATALOG, QUIZ_STRUCTURES, CONTENT_GUIDE',
+ next:[['Point the Railway web service at main',0.5],['Pick brand and domain, add live Clerk, Stripe and Resend keys',6],['Review and publish the 20 draft quizzes',15],['Stripe test purchases, a refund and a cancel; add the cron service',4],['Lawyer review of terms and auto-renewal',3]],
+ ideas:['AI-personalized narrative for the Deep Report','Spanish versions of the top 10 quizzes','Auto-export results as Story images'],
+ risks:['All 20 quizzes are drafts, so nothing is for sale','Auto-renewal law exposure','Mental-health screeners carry liability'],
+ needs:'Railway still deploys an old branch'},
+{id:'mentionful',name:'Mentionful',repo:'SEOBuilder',cat:'SaaS',status:'live',pct:65,hrs:60,value:5,last:'2026-10-10',
+ sum:'SEO and AI-answer visibility: site audit, scores, drafted fixes and mention tracking across 4 AI engines.',
+ urls:['mentionful.com','betterseobuilder.com'],sessions:['SEO/GEO chat function extraction'],
+ arch:{Client:'Next.js 16 · Tailwind',Host:'Railway “seobuilder”: web + landing services',Data:'Railway Postgres · job queue in Postgres',Auth:'Built-in accounts',Services:'Claude, OpenAI, Gemini, Perplexity · PageSpeed Insights'},
+ hostTags:['Railway','Postgres','LLM APIs'],docs:{prd:1,tech:1,api:0,ui:0,launch:0,claude:1},
+ next:[['Engine keys in prod, cost benchmark, per-run metering',8],['Email: password reset, verification, weekly report',10],['Stripe plans at $29, $99 and $299',14],['Structured parser for AI answers',8],['Rank data from DataForSEO and Search Console',20]],
+ ideas:['Track Google AI Overviews','Auto-PR or CMS plugin that applies the drafted fixes','White-label PDF reports for agencies'],
+ risks:['AI-visibility features don’t work without engine keys','LLM cost per run isn’t metered','No password reset yet']},
+{id:'earshot',name:'Earshot',repo:'social-listening-app',cat:'SaaS',status:'live',pct:70,hrs:55,value:4,last:'2026-10-10',
+ sum:'Self-serve social listening with tunable profiles, alerts and digests.',
+ urls:['earshot-listening.up.railway.app'],sessions:['Social listening app extraction'],
+ arch:{Client:'Next.js 16 · Tailwind 4 · Recharts',Host:'Railway “earshot” + volume',Data:'Railway Postgres · nightly backups 08:00 UTC',Auth:'Email + password, invites, roles',Services:'Claude Haiku and Opus · Reddit, X, Bluesky, YouTube, RSS · Resend · Slack'},
+ hostTags:['Railway','Postgres','Claude API'],docs:{prd:1,tech:1,api:1,ui:0,launch:0,claude:0},docNote:'BUILD_PLAN 39 of 43 done',
+ next:[['Stripe billing and plan limits',16],['Password reset and Google sign-in',8],['Rollback UI and boolean query editor',8],['Landing and pricing page, onboarding, domain',10],['Semantic topics with pgvector',12]],
+ ideas:['Competitor share of voice','AI reply drafts you copy, never auto-post','Weekly executive report to Slack or PDF'],
+ risks:['Reddit, X and Meta API approvals and costs','Scheduler can’t run on more than one instance','Unused Supabase schema drifting from the real one'],
+ needs:'Finish owner setup at /setup and add the Resend key'},
+{id:'book',name:'Book Builder',repo:'bookbuilder',cat:'SaaS',status:'building',pct:75,hrs:35,value:5,last:'2026-10-11',
+ sum:'Personalized children’s picture books, shared with family and printed as hardcovers.',
+ urls:[],sessions:['Bookbuilder website build'],
+ arch:{Client:'Next.js 16 · Konva editor · jsPDF',Host:'Vercel (planned)',Data:'Postgres + Supabase Storage (not provisioned)',Auth:'Clerk',Services:'Stripe + Tax · Lulu Print API · fal.ai or gpt-image-1'},
+ hostTags:['Vercel','Supabase','Clerk','Stripe','Lulu'],docs:{prd:0,tech:0,api:0,ui:0,launch:0,claude:0},
+ next:[['Provision database, storage, Clerk prod and Stripe; deploy',6],['Lulu sandbox test, then order one real printed copy',6],['Upscale the 12 template backgrounds for print',3],['Tests for checkout, webhooks and fulfilment',10],['Domain, COPPA-aware legal pages, pricing copy',6]],
+ ideas:['AI story draft from a few facts about the child','Gift a book credit','Yearly keepsake series bundle'],
+ risks:['Supabase free plan is full','Template art prints at about 117 dpi','Children’s photos and COPPA']},
+{id:'downbeat',name:'Downbeat',repo:'downbeat',cat:'SaaS',status:'live',pct:80,hrs:30,value:3,last:'2026-10-17',
+ sum:'Bands share a link, members tap availability, the leader sees the overlap.',
+ urls:['trydownbeat.app'],sessions:['Trydownbeat.app redesign','Downbeat login diagnosis'],
+ arch:{Client:'Next.js 16 · shadcn · Recharts',Host:'Railway (Dockerfile)',Data:'Railway Postgres · Drizzle, 8 migrations',Auth:'Clerk for leaders; links, passkeys and recovery codes for members',Services:'None yet'},
+ hostTags:['Railway','Postgres','Clerk'],docs:{prd:0,tech:0,api:0,ui:0,launch:0,claude:0},
+ next:[['Setlist builder with vote and veto',14],['Email reminders and best-slot notices',8],['Calendar export (.ics)',5],['CI for tests, lint and build',2],['Analytics and a feedback link',2]],
+ ideas:['Gig mode with venue, load-in and set length','“Book this slot” that confirms with everyone','Split rehearsal room costs'],
+ risks:['A drifting copy lives in the Database repo','No CI','Anyone with the member link can edit'],
+ needs:'Phone sideways-scroll fix found but not pushed'},
+{id:'vyg',name:'VYGR Cruises',repo:'vyg',cat:'Content + search',status:'stalled',pct:35,hrs:45,value:2,last:'2026-05-27',
+ sum:'Independent cruise search by destination, port, ship and length.',
+ urls:['vygrcruises.com'],sessions:[],
+ arch:{Client:'Next.js 16 · Tailwind 4',Host:'Railway (web and worker in one container)',Data:'SQLite on a volume · Drizzle',Auth:'Lucia, admin only',Services:'Unsplash and Wikimedia images'},
+ hostTags:['Railway','SQLite'],docs:{prd:0,tech:0,api:0,ui:0,launch:0,claude:1},
+ next:[['Choose a data source: affiliate feed or a reviewed crawl',8],['First real source with live prices',20],['Price labels, affiliate links and disclosures',4],['Stop committing the database; scheduled refresh',3],['SEO content and launch',8]],
+ ideas:['Fare-drop alerts','Compare sailings side by side','Cruises from my nearest port'],
+ risks:['Shows invented fares today','Terms-of-service exposure if crawling','README overstates the crawler']},
+{id:'strata',name:'Strata',repo:'Database · branch strata-spec-reconciliation',cat:'SaaS',status:'stalled',pct:40,hrs:90,value:3,last:'2026-10-12',
+ sum:'Structured work management with custom item types and a spreadsheet-grade grid with preview and undo.',
+ urls:[],sessions:['Strata work-management platform','Strata spec reconciliation fixes'],
+ arch:{Client:'Next.js 15 · TanStack Table and Virtual · Tailwind 4',Host:'Not deployed (docker-compose)',Data:'Postgres 16 · Drizzle · RLS per workspace',Auth:'Magic link',Services:'None yet'},
+ hostTags:['Docker','Postgres'],docs:{prd:1,tech:1,api:1,ui:1,launch:1,claude:1},docNote:'Launch checklist 0 of 164',
+ next:[['Move Strata into its own repo',1],['Provision Postgres and deploy a preview',6],['Category trees and variant inheritance',40],['Launch checklist pass',30]],
+ ideas:['Excel import with change-set preview','Saved grid views per role','AI bulk edits proposed as change sets'],
+ risks:['Overlaps with TaskParty','Lives on a branch of an unrelated repo','Rough estimate; needs a proper review'],
+ needs:'Session is waiting on database and Vercel access'},
+{id:'nestcraft',name:'NestCraft',repo:'NestCraft (private)',cat:'App',status:'unknown',pct:null,hrs:null,value:null,last:'2026-10-10',
+ sum:'Private repo. This session wasn’t allowed to open it, so it isn’t assessed yet.',
+ urls:[],sessions:['NestCraft app creation'],arch:null,hostTags:[],docs:null,next:[],ideas:[],risks:['Grant read access to include it']},
+{id:'smoosh',name:'Smoosh',repo:'Merge_Game1',cat:'Game',status:'live',pct:85,hrs:30,value:3,last:'2026-11-08',
+ sum:'Physics merge game in a watercolor fantasy world, with endless and story modes.',
+ urls:['spencertownley-sys.github.io/Merge_Game1'],sessions:['Smoosh fruit merge game','Game level review tool'],
+ arch:{Client:'React 19 · PixiJS 8 · Rapier2D in a worker · installable PWA',Host:'GitHub Pages (Actions deploy, Playwright CI)',Data:'IndexedDB on device',Auth:'None',Services:'Higgsfield art'},
+ hostTags:['GitHub Pages','PWA'],docs:{prd:1,tech:0,api:1,ui:1,launch:0,claude:1},docNote:'Plus game design, art direction, journey plan',
+ next:[['Levels 35–41 and the finale',14],['Act cards and the epilogue',6],['Daily Glow seeded run',4],['Real-device playtest and performance',6]],
+ ideas:['Skylight Album collection screen','Seed challenges shared by link','App store build with Capacitor'],
+ risks:['Mobile Lighthouse score around 0.8','Working title isn’t final']},
+{id:'jimothy',name:'JIMOTHY: A Seattle Story',repo:'jimothy',cat:'Game',status:'live',pct:60,hrs:56,value:2,last:'2026-11-09',
+ sum:'Cozy platformer starring Ballard’s short-spined raccoon.',
+ urls:['spencertownley-sys.github.io/jimothy','spencertownley.com/play/jimothy'],sessions:['Jimothy: A Seattle Story'],
+ arch:{Client:'Phaser 3.90 · TypeScript · Tiled maps',Host:'GitHub Pages',Data:'localStorage saves',Auth:'None',Services:'Higgsfield art · Epidemic Sound audio'},
+ hostTags:['GitHub Pages'],docs:{prd:1,tech:1,api:0,ui:1,launch:1,claude:1},docNote:'GDD, level specs, asset manifest, QA 0 of 45',
+ next:[['World 4 and the Bridge Troll boss',20],['World 5, ending and secret level',16],['Sprite animation frames',12],['QA checklist and difficulty tuning',8]],
+ ideas:['Speedrun timer with par medals','Daily remix level','Phone app with Capacitor'],
+ risks:['Based on a real local raccoon; check likeness','Sprites are single poses','Music licence for a native app']},
+{id:'more',name:'MORE.',repo:'More_A_Playable_Story',cat:'Game',status:'live',pct:25,hrs:200,value:3,last:'2026-09-26',
+ sum:'16-bit story game about the paperclip maximizer. You play Pip, a factory AI.',
+ urls:['makemorepaperclips.com'],sessions:['SNES game story: paperclip thought experiment','Paperclip Drift vertical slice'],
+ arch:{Client:'Plain JS canvas engine at 384×288',Host:'GitHub Pages',Data:'localStorage save',Auth:'None',Services:'Higgsfield art · Python pixel-snap tool'},
+ hostTags:['GitHub Pages'],docs:{prd:0,tech:0,api:0,ui:0,launch:0,claude:0},docNote:'STORY.md story bible',
+ next:[['Mailing list and an itch.io page',3],['Chapter 2 “The Floor”',40],['Chapter 3 “The Town”',50],['Chapters 4–6 and epilogue',100],['Playtest and save migration',8]],
+ ideas:['Clip-count speedrun board','Achievements for alignment choices','Desktop build for Steam'],
+ risks:['Each chapter needs new mechanics and art','Higgsfield licensing for a commercial release','Comparisons to Universal Paperclips'],
+ needs:'A pull request is waiting for your merge'},
+{id:'splitg',name:'Split the G',repo:'Database · branch split-the-g-game',cat:'Game',status:'stalled',pct:null,hrs:null,value:null,last:'2026-08-30',
+ sum:'Three-mode stout-pouring iPhone game in SwiftUI. Not assessed yet.',
+ urls:[],sessions:['Split the G iPhone game'],
+ arch:{Client:'SwiftUI · Xcode project SplitTheG',Host:'App Store (not submitted)',Data:'On device',Auth:'None',Services:'Game Center'},
+ hostTags:['iOS'],docs:{prd:0,tech:0,api:0,ui:0,launch:0,claude:0},next:[],ideas:[],risks:['Lives on a branch of the Database repo']},
+{id:'cruise',name:'Cruise News You Can Use',repo:'CruiseNewsYouCanUse',cat:'Content',status:'live',pct:70,hrs:20,value:3,last:'2026-11-10',
+ sum:'AI-written weekday cruise industry brief with a social pulse page and a podcast source.',
+ urls:['spencertownley-sys.github.io/CruiseNewsYouCanUse'],sessions:['Cruise News weekday brief scheduler','Cruise News daily brief runner','Troubleshooting','Cruise brief publisher'],
+ arch:{Client:'Static HTML with client-side search',Host:'GitHub Pages',Data:'Markdown in data/ rendered by publish_post.py',Auth:'None',Services:'Scheduled Claude task, weekdays 6:52 PT · Bluesky and X · NotebookLM'},
+ hostTags:['GitHub Pages','Claude schedule'],docs:{prd:0,tech:0,api:0,ui:0,launch:0,claude:0},
+ next:[['Reliable schedule with a missed-day alert',4],['RSS feed and email signup',5],['Custom domain, share tags, analytics',2],['Feed Social Pulse from Earshot, or remove it',4],['Automate the podcast with TTS',6]],
+ ideas:['Follow pages per cruise line and ship','Deal of the week from VYGR fares','Weekly email with CCL, NCLH and RCL prices'],
+ risks:['Automation lives outside the repo','No review step for AI factual errors','Missed days need backfills'],
+ needs:'Add the repo to the “Cruise News weekday brief” scheduled task'},
+{id:'zebra',name:'Spotted Zebra',repo:'spotted_zebra',cat:'Content',status:'live',pct:90,hrs:6,value:3,last:'2026-11-08',
+ sum:'Site for the Seattle party cover band: bookings, shows, music and blog.',
+ urls:['spottedzebra.party'],sessions:['Spotted zebra site updates','Spotted Zebra band website'],
+ arch:{Client:'Jekyll · plain JS jukebox and keyboard',Host:'GitHub Pages, daily scheduled-post workflow',Data:'YAML in _data',Auth:'None',Services:'Cloudflare DNS and Email Routing · FormSubmit'},
+ hostTags:['GitHub Pages','Cloudflare DNS'],docs:{prd:0,tech:0,api:0,ui:0,launch:0,claude:0},
+ next:[['Add 10–20 gig photos',1.5],['Search Console and Google Business Profile',2],['Retire the old Wix site',1],['Check licensing for cover recordings',1],['Fix the “(2027 Guide)” post title',0.5]],
+ ideas:['Sync shows from Bandsintown','Downloadable press kit PDF','Song request voting before gigs'],
+ risks:['Licensing for posted covers','GitHub stops scheduled workflows after 60 idle days','8 MB hero video']},
+{id:'personal',name:'spencertownley.com',repo:'spencertownleysite',cat:'Portfolio',status:'live',pct:85,hrs:16,value:4,last:'2026-10-10',
+ sum:'Personal portfolio with a photoreal Room mode and a 3D Brain mode.',
+ urls:['spencertownley.com'],sessions:['Personal professional website'],
+ arch:{Client:'React 19 · Vite 8 · three.js · WebGL depth shader · d3-geo',Host:'Railway “spencertownley-site” behind Cloudflare DNS',Data:'Static',Auth:'None',Services:'Higgsfield and Depth Anything assets'},
+ hostTags:['Railway','Cloudflare DNS'],docs:{prd:0,tech:0,api:0,ui:0,launch:0,claude:1},
+ next:[['Resume PDF and career story',4],['Landscape and wildlife picks, video reel',4],['Trip itinerary and Brain copy',4],['Email routing and analytics',1],['Lighthouse and accessibility pass',3]],
+ ideas:['“Now building” feed from this dashboard','Case-study pages with metrics','Clickable travel map with photos'],
+ risks:['Waiting on your content','Heavy payload on phones','Jimothy build is copied in by hand']},
+{id:'photo',name:'Townley Photography',repo:'townley-photography-site',cat:'Business site',status:'live',pct:80,hrs:12,value:4,last:'2026-09-21',
+ sum:'Portraits, real estate, prints and video around Puget Sound.',
+ urls:['townleyphotography.com'],sessions:[],
+ arch:{Client:'Static HTML and CSS',Host:'Cloudflare Pages or GitHub Pages (unclear)',Data:'Static',Auth:'None',Services:'Formspree'},
+ hostTags:['Cloudflare Pages?','GitHub Pages?'],docs:{prd:0,tech:0,api:0,ui:0,launch:0,claude:0},docNote:'llms.txt and sitemap only',
+ next:[['Make the newsletter signup work',1.5],['Video embeds on /video',3],['Print checkout with Stripe Payment Links',4],['Pick one host and add a README',1.5],['WebP images and lazy loading',2]],
+ ideas:['Client proofing galleries','Booking with a deposit','Real estate price calculator'],
+ risks:['Uploaded build with no source files','Subscribe button does nothing on 11 pages']},
+{id:'creative',name:'Townley Creative',repo:'townleycreative',cat:'Business site',status:'building',pct:5,hrs:27,value:2,last:'2026-10-17',
+ sum:'Higgsfield site scaffold; five layouts proposed on 9 Nov.',
+ urls:[],sessions:['Townley Creative website'],
+ arch:{Client:'TanStack Start · React 19 · Higgsfield Quanta UI',Host:'Cloudflare Workers through Higgsfield',Data:'None yet (D1 and R2 available)',Auth:'None',Services:'Higgsfield generation SDK'},
+ hostTags:['Cloudflare Worker','Higgsfield'],docs:{prd:0,tech:0,api:0,ui:0,launch:0,claude:0},
+ next:[['Pick one of the five proposed layouts',1],['Define services and content',3],['Build the pages',16],['Inquiry form',5],['Domain and SEO',3]],
+ ideas:['Proofing galleries on R2','AI mood boards through Higgsfield','Booking with availability'],
+ risks:['Overlaps the photography and personal sites','Deploy config is generated outside the repo'],
+ needs:'Choose one of the five layouts'},
+{id:'amanda',name:'Amanda Williams Portfolio',repo:'Amanda-Williams-Portfolio',cat:'Portfolio',status:'building',pct:70,hrs:4,value:2,last:'2026-09-24',
+ sum:'One-page portfolio and resume for a project manager’s job search.',
+ urls:[],sessions:[],
+ arch:{Client:'Single HTML file',Host:'Cloudflare Pages (planned)',Data:'Static',Auth:'None',Services:'None'},
+ hostTags:['Cloudflare Pages'],docs:{prd:0,tech:0,api:0,ui:0,launch:0,claude:0},docNote:'Hosting guide for the owner',
+ next:[['Move the site to the repo root, fix the README',0.5],['Share tags, favicon, structured data, resume PDF',1.5],['Pull images out into WebP files',1],['Domain, deploy and email routing with Amanda',1]],
+ ideas:['Downloadable resume','Case-study pages','Contact form instead of a mailto link'],
+ risks:['Waiting on the owner to buy a domain','Personal email address is public'],
+ needs:'Amanda needs to buy a domain'},
+{id:'mariners',name:'Mariners Prediction Hub',repo:'mariners-tracker',cat:'Tool',status:'archive',pct:40,hrs:10,value:1,last:'2026-09-12',
+ sum:'Friends guess monthly Mariners wins. Archived on GitHub; dormant until April.',
+ urls:[],sessions:[],arch:{Client:'Single HTML file',Host:'None',Data:'localStorage + JSON',Auth:'None',Services:'None'},
+ hostTags:[],docs:{prd:0,tech:0,api:0,ui:0,launch:0,claude:0},
+ next:[['Fetch records from the MLB Stats API',3],['Shared storage so guesses sync',4],['2027 season reset and leaderboard',2]],
+ ideas:['Season-long leaderboard','Reminder to submit guesses'],risks:['Friends’ names in a public CSV']},
+{id:'timeline',name:'timeline_web_app.py',repo:'timeline_web_app.py',cat:'Tool',status:'archive',pct:2,hrs:null,value:1,last:'2026-05-22',
+ sum:'Untouched Streamlit template. Chronologue covers the same idea.',urls:[],sessions:[],arch:null,hostTags:['Streamlit'],docs:null,next:[],ideas:[],risks:[]},
+{id:'ainews',name:'AI News Site',repo:'AI_news_site',cat:'Content',status:'idea',pct:0,hrs:20,value:2,last:'2026-10-17',
+ sum:'Empty repo. Could reuse the Cruise News pipeline.',urls:[],sessions:[],arch:null,hostTags:[],docs:null,
+ next:[['Define the concept',2],['Fork the Cruise News generator',6],['Ingestion and summaries on a schedule',8],['Newsletter and SEO basics',4]],ideas:[],risks:['Crowded niche']},
+{id:'promovault',name:'PromoVault',repo:'Database (main history) · promo-offer-studio',cat:'SaaS',status:'archive',pct:null,hrs:null,value:null,last:'2026-09-06',
+ sum:'Trade promotion and product data system for cruise marketing. Promo Offer Studio is archived; a migration spec targets Power Apps.',
+ urls:[],sessions:['TPM/PIM SaaS','Promo offer studio app','Promo offer studio live'],arch:null,hostTags:[],docs:null,next:[],ideas:[],risks:[]}
+];
+
+const INFRA = [
+ {prov:'Cloudflare',sub:'Workers, D1, R2, DNS, Pages',items:[
+  ['Worker shortlist','FrameVote','Custom domains framevote.com and www'],['D1 shortlist','FrameVote','No expiry or cleanup yet'],['R2 shortlist-photos','FrameVote','Grows with every poll'],
+  ['Worker (Higgsfield-managed)','Townley Creative','Config generated at deploy'],['DNS spencertownley.com','spencertownley.com','Proxied to Railway'],['DNS + Email Routing spottedzebra.party','Spotted Zebra','contact@ and booking@ to Gmail'],['Pages townleyphotography.com?','Townley Photography','Host unconfirmed']]},
+ {prov:'Railway',sub:'About 8 services',items:[
+  ['seobuilder: web, landing','Mentionful',''],['earshot + Postgres + volume','Earshot','Hobby plan, own backups'],['downbeat + Postgres','Downbeat',''],['spencertownley-site: web','spencertownley.com',''],
+  ['web-production-41f16 + worker','NimbusWatch','Worker not running'],['web-production-1692a','Quiz Platform','Deploys an old branch'],['vyg (SQLite volume)','VYGR Cruises','Stale since May']]},
+ {prov:'Supabase',sub:'Free plan',cap:[2,2],items:[
+  ['allclear · us-west-1','NimbusWatch','Active · kept awake by a GitHub Action'],['TaskParty · us-west-1','TaskParty','Active · migrations 0001–0004'],['Make Me A Timeline · us-east-1','Chronologue?','Paused']]},
+ {prov:'Vercel',sub:'Team scope',items:[['taskparty','TaskParty','Production deploys ready']]},
+ {prov:'GitHub Pages and Actions',sub:'Static hosting and cron',items:[
+  ['Pages: Merge_Game1','Smoosh',''],['Pages: jimothy','JIMOTHY',''],['Pages: makemorepaperclips.com','MORE.',''],['Pages: spottedzebra.party','Spotted Zebra',''],['Pages: CruiseNewsYouCanUse','Cruise News',''],
+  ['cron 17 */6 * * * keepalive','NimbusWatch','Stops Supabase pausing'],['cron 15:17 UTC publish posts','Spotted Zebra','Disabled after 60 idle days']]},
+ {prov:'Shared services',sub:'Accounts used across projects',items:[
+  ['Clerk (dev instance, 100-user cap)','TaskParty, Downbeat, Quiz, Book Builder','Production instances still needed'],['Claude scheduled task: weekday brief','Cruise News','Runs 6:52 PT'],['Higgsfield','Smoosh, JIMOTHY, MORE., Townley Creative','Art and hosting'],['Stripe','Quiz, Book Builder','Test mode only']]},
+ {prov:'Domains',sub:'Known from repos and DNS',items:[
+  ['framevote.com','FrameVote',''],['mentionful.com','Mentionful',''],['betterseobuilder.com','Mentionful','Ad landing page'],['trydownbeat.app','Downbeat',''],['vygrcruises.com','VYGR Cruises',''],['spottedzebra.party','Spotted Zebra',''],['spencertownley.com','Personal site',''],['makemorepaperclips.com','MORE.',''],['townleyphotography.com','Townley Photography',''],['makethat.wtf','Unmatched','Linked from your site; no repo found']]}
+];
+
+const IDEAS_NEW = [
+ ['PhotoVerify','Location-verified photo web app (May session, no repo)'],
+ ['Pixel-art web games','Research session from March with game concepts'],
+ ['Points Pool','Linked from your site at points-pool-production.up.railway.app; no repo found'],
+ ['Cruise data hub','Combine VYGR fares, Cruise News and Earshot listening into one cruise product'],
+ ['Project status widget','Embed live status from this dashboard on spencertownley.com']
+];
+
+const HK = [
+ {t:'Archive or merge',items:[
+  ['timeline_web_app.py','Untouched template; Chronologue covers it. Archive.'],['Database repo','Holds 5 unrelated branches. Split Strata and Split the G into their own repos, then archive.'],['AI_news_site','Empty. Delete, or fork the Cruise News pipeline into it.'],['PromoVault','Superseded. Keep archived.']]},
+ {t:'Overlaps to decide',items:[
+  ['TaskParty and Strata','Both are work-management platforms. Pick one to carry forward.'],['Three Townley sites','Personal, Photography and Creative overlap. Decide what Creative is for.'],['Two timeline apps','Fold the Streamlit app into Chronologue.'],['Social listening twice','Cruise News Social Pulse stopped on 6 Oct; feed it from Earshot.']]},
+ {t:'Docs coverage',items:[
+  ['Full suite','TaskParty, NimbusWatch, Chronologue, Strata'],['Partial','Smoosh, JIMOTHY, Mentionful, Earshot, Quiz Platform'],['README only','FrameVote, Downbeat, Book Builder, MORE., Cruise News, all content sites'],['Suggestion','Generate a one-page PRD and CLAUDE.md for each README-only project']]}
+];
+
+const DOCS = [
+ ['01-problem-and-landscape.md','Why a portfolio control room; compared with GitHub Projects, Linear and Notion'],
+ ['02-prd.md','Goals, users, scope, requirements, success measures'],
+ ['03-user-stories-and-backlog.md','Stories with acceptance criteria, ordered backlog'],
+ ['04-roadmap-and-release-plan.md','Phases 1–3 with exit criteria'],
+ ['05-technical-architecture.md','Next.js on Vercel, Neon, Clerk, sync jobs'],
+ ['06-data-model.md','Projects, components, sessions, steps, ideas, snapshots'],
+ ['07-api-specification.md','Internal routes and server actions'],
+ ['08-auth-and-permissions.md','Single owner, optional read-only share link'],
+ ['09-design-system.md','Tokens, type, status colors, components'],
+ ['10-application-screens.md','Every screen in this mockup, annotated'],
+ ['11-views-specification.md','Table, queue, planner, infra map behaviors'],
+ ['12-integrations-and-sync.md','GitHub, Vercel, Railway, Cloudflare, Supabase, Claude'],
+ ['13-project-inventory.md','The audited seed data for all 26 projects'],
+ ['14-deployment-and-operations.md','Environments, secrets, cron, backups'],
+ ['15-quality-and-test-plan.md','Unit, integration and Playwright coverage'],
+ ['16-build-guide.md','Step-by-step build order for Claude Code'],
+ ['CLAUDE.md · HANDOFF.md','Agent rules and session handoff']
+];
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const score = p => (p.value && p.hrs) ? +(p.value * (p.pct/100) / p.hrs * 100).toFixed(1) : null;
+P.forEach(p => p.score = score(p));
+const daysAgo = d => Math.round((TODAY - new Date(d+'T12:00:00'))/864e5);
+const fmtDate = d => d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+const pill = s => `<span class="pill s-${s}">${STATUS[s]}</span>`;
+const active = P.filter(p => !['archive','idea'].includes(p.status));
+
+/* A */
+(function(){
+  const assessed = active.filter(p => p.pct!=null);
+  const avg = Math.round(assessed.reduce((a,p)=>a+p.pct,0)/assessed.length);
+  const hrs = active.reduce((a,p)=>a+(p.hrs||0),0);
+  const live = P.filter(p => p.status==='live').length;
+  const preview = P.filter(p => p.status==='preview').length;
+  const needs = P.filter(p => p.needs).length;
+  const stale = active.filter(p => daysAgo(p.last) > 30).length;
+  const k = [
+    [P.length,'Projects tracked',`${active.length} active · ${P.length-active.length} archive or idea`],
+    [live,'Live on a real URL',`${preview} more on preview URLs`],
+    [avg+'%','Average completion',`across ${assessed.length} assessed projects`],
+    [Math.round(hrs),'Hours to finish all',`about ${Math.ceil(hrs/12)} weeks at 12 h/week`],
+    [needs,'Need your action','blocked on you, not on code'],
+    [stale,'No push in 30+ days','candidates to pause or restart']
+  ];
+  $('#kpis').innerHTML = k.map(([v,l,s])=>`<div class="kpi"><span class="v">${v}</span><span class="l">${l}</span><span class="s">${s}</span></div>`).join('');
+})();
+
+/* B */
+(function(){
+  const pool = active.filter(p=>p.score!=null);
+  const quick = pool.filter(p=>p.hrs<=15).sort((a,b)=>b.score-a.score).slice(0,4);
+  const launch = pool.filter(p=>p.value>=4 && p.hrs>15 && p.hrs<=60).sort((a,b)=>b.score-a.score).slice(0,4);
+  const long = pool.filter(p=>p.hrs>15 && p.value<4).sort((a,b)=>b.score-a.score).slice(0,4);
+  const card = p => `<button class="qcard" data-id="${p.id}"><span class="row"><span class="nm">${esc(p.name)}</span><span class="mono num">${p.score}</span></span>
+    <span class="bar"><i style="width:${p.pct}%"></i></span>
+    <span class="row"><span class="nx">${esc(p.next[0]?p.next[0][0]:'')}</span></span>
+    <span class="row mono muted" style="font-size:11.5px"><span>${p.pct}% done</span><span>${p.hrs} h left</span></span></button>`;
+  const lane = (t,list,sub) => `<div class="lane"><h3><span>${t}</span><span>${sub}</span></h3>${list.map(card).join('')}</div>`;
+  $('#lanes').innerHTML = lane('Quick wins',quick,'≤15 h') + lane('Launch pushes',launch,'value 4–5') + lane('Steady builds',long,'>15 h');
+  const n = P.filter(p=>p.needs);
+  $('#needs-count').textContent = n.length + ' items';
+  $('#needs').innerHTML = n.map(p=>`<li><span class="dot ${p.status==='stalled'?'risk':''}"></span><div><div class="p">${esc(p.name)}</div><div class="t">${esc(p.needs)}</div></div></li>`).join('');
+})();
+
+/* C + D */
+let filt = 'all', sortKey = 'score', sortDir = -1, sel = 'taskparty';
+const FILTERS = [['all','All'],['live','Live'],['preview','Preview'],['building','Building'],['stalled','Stalled'],['SaaS','SaaS'],['Game','Games'],['site','Sites'],['archive','Archive and ideas']];
+$('#filters').innerHTML = FILTERS.map(([k,l])=>`<button class="fbtn" data-f="${k}" aria-pressed="${k==='all'}">${l}</button>`).join('');
+function matches(p){
+  const q = $('#q').value.trim().toLowerCase();
+  if(q && !(p.name+' '+p.repo+' '+p.hostTags.join(' ')+' '+p.cat).toLowerCase().includes(q)) return false;
+  if(filt==='all') return true;
+  if(['live','preview','building','stalled'].includes(filt)) return p.status===filt;
+  if(filt==='archive') return ['archive','idea','unknown'].includes(p.status);
+  if(filt==='site') return /Content|site|Portfolio/.test(p.cat);
+  return p.cat===filt;
+}
+function renderRows(){
+  const order = {live:0,preview:1,building:2,stalled:3,unknown:4,idea:5,archive:6};
+  const rows = P.filter(matches).sort((a,b)=>{
+    let x=a[sortKey], y=b[sortKey];
+    if(sortKey==='status'){x=order[a.status];y=order[b.status]}
+    if(x==null) return 1; if(y==null) return -1;
+    return (x>y?1:x<y?-1:0)*sortDir;
+  });
+  $('#rows').innerHTML = rows.map(p=>`<tr data-id="${p.id}" class="${p.id===sel?'sel':''}">
+    <td><div class="pname">${esc(p.name)}</div><div class="prepo">${esc(p.repo)}</div></td>
+    <td>${pill(p.status)}</td>
+    <td>${p.pct==null?'<span class="muted">—</span>':`<div class="pct"><div class="bar" style="width:90px"><i style="width:${p.pct}%"></i></div><span class="n">${p.pct}%</span></div>`}</td>
+    <td class="num">${p.hrs==null?'<span class="muted">—</span>':p.hrs+' h'}</td>
+    <td class="num mono">${p.score==null?'<span class="muted">—</span>':p.score}</td>
+    <td><div class="chips">${p.hostTags.map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div></td>
+    <td class="num"><span class="mono" style="font-size:12px">${p.last.slice(5)}</span> <span class="muted" style="font-size:12px">${daysAgo(p.last)}d</span></td></tr>`).join('') || `<tr><td colspan="7" class="muted">No projects match. Clear the search or pick another filter.</td></tr>`;
+}
+function renderDetail(){
+  const p = P.find(x=>x.id===sel);
+  const eta = p.hrs ? new Date(TODAY.getTime() + Math.ceil(p.hrs/12)*7*864e5) : null;
+  const urls = p.urls.length ? p.urls.map(u=>/\(/.test(u)?`<span>${esc(u)}</span>`:`<a href="https://${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a>`).join('<br>') : '<span class="muted">None yet</span>';
+  const sess = p.sessions.length ? p.sessions.map(s=>`<span class="chip">${esc(s)}</span>`).join('') : '<span class="muted">No Claude Code session found. Link a claude.ai project here.</span>';
+  const arch = p.arch ? `<div class="arch">${Object.entries(p.arch).map(([k,v])=>`<div class="node"><b>${k}</b><span>${esc(v)}</span></div>`).join('')}</div>` : '<p class="muted">Not assessed.</p>';
+  const docs = p.docs ? `<div class="docdots">${DOCKEYS.map(([k,l])=>`<span class="${p.docs[k]?'y':''}">${l}</span>`).join('')}</div>${p.docNote?`<p class="muted" style="font-size:12px">${esc(p.docNote)}</p>`:''}` : '<p class="muted">Not assessed.</p>';
+  const steps = p.next.length ? `<ul class="steps">${p.next.map(([t,h],i)=>`<li><input type="checkbox" id="st-${p.id}-${i}" aria-label="Done"><label for="st-${p.id}-${i}">${esc(t)}</label><span class="h">${h} h</span></li>`).join('')}</ul>` : '<p class="muted">Not assessed yet.</p>';
+  $('#detail').innerHTML = `
+  <div class="dhead">
+    <div class="t"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h2>${esc(p.name)}</h2>${pill(p.status)}<span class="chip">${esc(p.cat)}</span></div>
+      <p class="muted">${esc(p.sum)}</p>
+      <p class="mono muted">github.com/spencertownley-sys/${esc(p.repo.split(' ')[0])}</p></div>
+    <div class="meter">${p.pct==null?'<span class="big muted">—</span>':`<span class="big">${p.pct}%</span><div class="bar"><i style="width:${p.pct}%"></i></div>`}
+      <span class="muted" style="font-size:12.5px">${p.hrs?`${p.hrs} h left · done around ${fmtDate(eta)} at 12 h/week`:'No estimate yet'}${p.value?` · value ${p.value}/5`:''}</span></div>
+  </div>
+  <div class="dgrid">
+    <div><span class="lbl">Where it lives</span><dl class="kv"><dt>URLs</dt><dd>${urls}</dd><dt>Repo</dt><dd class="mono">${esc(p.repo)}</dd><dt>Last push</dt><dd>${p.last} (${daysAgo(p.last)} days ago)</dd></dl>
+      <span class="lbl">Claude sessions</span><div class="chips">${sess}</div></div>
+    <div style="grid-column:span 2"><span class="lbl">Architecture</span>${arch}<span class="lbl">Documents</span>${docs}</div>
+    <div><span class="lbl">Next steps</span>${steps}</div>
+    <div><span class="lbl">Ideas to build</span>${p.ideas.length?`<ul class="plain">${p.ideas.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>`:'<p class="muted">None yet.</p>'}</div>
+    <div><span class="lbl">Risks and blockers</span>${p.risks.length?`<ul class="plain">${p.risks.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>`:'<p class="muted">None noted.</p>'}${p.needs?`<p style="font-size:13px"><span class="warn">Needs you:</span> ${esc(p.needs)}</p>`:''}</div>
+  </div>`;
+}
+function select(id, scroll){ sel=id; renderRows(); renderDetail(); if(scroll) $('#detail-sec').scrollIntoView({behavior:'smooth',block:'start'}); }
+$('#filters').addEventListener('click',e=>{const b=e.target.closest('.fbtn'); if(!b) return; filt=b.dataset.f; document.querySelectorAll('.fbtn').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderRows();});
+$('#q').addEventListener('input',renderRows);
+document.querySelector('thead').addEventListener('click',e=>{const b=e.target.closest('[data-sort]'); if(!b) return; const k=b.dataset.sort; if(sortKey===k) sortDir*=-1; else {sortKey=k; sortDir=(k==='name'||k==='status'||k==='hrs')?1:-1;} renderRows();});
+$('#rows').addEventListener('click',e=>{const r=e.target.closest('tr[data-id]'); if(r) select(r.dataset.id,true);});
+$('#lanes').addEventListener('click',e=>{const c=e.target.closest('.qcard'); if(c) select(c.dataset.id,true);});
+renderRows(); renderDetail();
+
+/* E */
+$('#infra-grid').innerHTML = INFRA.map(g=>`<div class="panel prov"><header><h3>${g.prov}</h3>${g.cap?`<span class="cap"><span class="bar"><i style="width:${g.cap[0]/g.cap[1]*100}%"></i></span><span class="warn">${g.cap[0]} of ${g.cap[1]} active</span></span>`:`<span class="muted" style="font-size:12px">${g.sub}</span>`}</header>
+  <ul>${g.items.map(([r,p,n])=>`<li><span class="r">${esc(r)}</span><span class="pj">${esc(p)}</span>${n?`<span class="nt">${esc(n)}</span>`:''}</li>`).join('')}</ul></div>`).join('');
+
+/* F */
+let queue = ['zebra','amanda','framevote','photo','personal','chrono','quiz','book','nimbus','cruise','smoosh','downbeat','mentionful','earshot','taskparty','jimothy','vyg','strata','more'];
+function renderPlan(){
+  const hpw = +$('#hpw').value; $('#hpw-v').textContent = hpw+' h';
+  let cum = 0; const rows = queue.map(id=>{const p=P.find(x=>x.id===id); const start=cum; cum+=p.hrs; return {p,start,end:cum};});
+  const weeks = Math.ceil(cum/hpw);
+  const end = new Date(TODAY.getTime()+weeks*7*864e5);
+  $('#total-eta').textContent = `All done around ${end.toLocaleDateString('en-US',{month:'short',year:'numeric'})}`;
+  $('#queue').innerHTML = rows.map(({p,end},i)=>`<li><span class="ix">${String(i+1).padStart(2,'0')}</span><span>${esc(p.name)} <span class="muted mono" style="font-size:11.5px">${p.hrs} h</span></span><span class="eta">${fmtDate(new Date(TODAY.getTime()+Math.ceil(end/hpw)*7*864e5))}</span><span class="mv"><button data-mv="-1" data-i="${i}" aria-label="Move ${esc(p.name)} up">▲</button><button data-mv="1" data-i="${i}" aria-label="Move ${esc(p.name)} down">▼</button></span></li>`).join('');
+  const totalW = Math.max(weeks,1);
+  const step = totalW>40?8:totalW>20?4:2;
+  let ticks=''; for(let w=0; w<=totalW; w+=step){ ticks+=`<span style="left:${w/totalW*100}%">${fmtDate(new Date(TODAY.getTime()+w*7*864e5))}</span>`; }
+  $('#gantt').innerHTML = `<div class="ticks">${ticks}</div>` + rows.map(({p,start,end})=>`<div class="grow"><span class="nm">${esc(p.name)}</span><div class="track"><i style="left:${start/hpw/totalW*100}%;width:${Math.max((end-start)/hpw/totalW*100,0.6)}%"></i></div></div>`).join('');
+}
+$('#hpw').addEventListener('input',renderPlan);
+$('#queue').addEventListener('click',e=>{const b=e.target.closest('[data-mv]'); if(!b) return; const i=+b.dataset.i, j=i+(+b.dataset.mv); if(j<0||j>=queue.length) return; [queue[i],queue[j]]=[queue[j],queue[i]]; renderPlan();});
+renderPlan();
+
+/* G */
+(function(){
+  const withIdeas = active.filter(p=>p.ideas.length && (p.value||0)>=4).slice(0,6);
+  const rest = active.filter(p=>p.ideas.length && (p.value||0)<4).slice(0,6);
+  const block = (t,list,sub) => `<div class="panel"><div class="cardhead"><h3>${t}</h3><span class="muted" style="font-size:12px">${sub}</span></div><ul class="list">${list.map(p=>`<li><b style="font-weight:600">${esc(p.name)}</b><span class="sub">${p.ideas.map(esc).join(' · ')}</span></li>`).join('')}</ul></div>`;
+  $('#ideas-grid').innerHTML = block('Feature ideas: high-value projects',withIdeas,'value 4–5') + block('Feature ideas: other projects',rest,'value 1–3') +
+    `<div class="panel"><div class="cardhead"><h3>New project ideas</h3><span class="muted" style="font-size:12px">parking lot</span></div><ul class="list">${IDEAS_NEW.map(([t,s])=>`<li><b style="font-weight:600">${esc(t)}</b><span class="sub">${esc(s)}</span></li>`).join('')}</ul></div>`;
+})();
+
+/* H */
+$('#hk').innerHTML = HK.map(g=>`<div class="panel"><div class="cardhead"><h3>${g.t}</h3></div><ul class="list">${g.items.map(([t,s])=>`<li><b style="font-weight:600">${esc(t)}</b><span class="sub">${esc(s)}</span></li>`).join('')}</ul></div>`).join('');
+
+/* I */
+$('#docs').innerHTML = DOCS.map(([f,d])=>`<li><span class="f">${esc(f)}</span><span class="d">${esc(d)}</span></li>`).join('');
+
+/* tab highlight */
+const secs = ['overview','projects','infra','planner','ideas','housekeeping','plan'].map(id=>document.getElementById(id));
+const tabs = document.querySelectorAll('.tabs a');
+try{ const io = new IntersectionObserver(es=>{es.forEach(en=>{ if(en.isIntersecting){ tabs.forEach(t=>t.classList.toggle('on',t.getAttribute('href')==='#'+en.target.id)); } });},{rootMargin:'-40% 0px -55% 0px'}); secs.forEach(s=>io.observe(s)); }catch(e){}
+</script>
