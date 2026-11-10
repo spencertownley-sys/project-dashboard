@@ -271,4 +271,5 @@ a.qcard{text-decoration:none;color:inherit}
 .idea-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:start}
 .footer{color:var(--faint);font-size:12px;padding-block:0 32px}
 .plain{list-style:disc}
+.plain:has(.star){list-style:none;padding-left:0}
 .plain li::marker{color:var(--faint)}

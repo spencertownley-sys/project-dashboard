@@ -18,7 +18,7 @@ This document defines the behavior behind each screen in document 10: every form
 
 Stale examples: Book Builder (last push 2026-10-11, 30 days) is not stale; NimbusWatch (2026-10-10, 31 days) is stale; Strata (29 days) is not.
 
-Score examples: Spotted Zebra 3 × 0.90 ÷ 6 × 100 = 45.0; TaskParty 4 × 0.75 ÷ 50 × 100 = 6.0; NestCraft (all null) is null. AI News Site has pct 0 and scores 0 rather than null; the spec says pct zero gives null. It is an idea project, so it never reaches a lane either way; the Projects table shows "0" (deviation noted in document 16).
+Score examples: Spotted Zebra 3 × 0.90 ÷ 6 × 100 = 45.0; TaskParty 4 × 0.75 ÷ 50 × 100 = 6.0; NestCraft (all null) is null. AI News Site has pct 0 and scores 0. It is an idea project, so it never reaches a lane.
 
 ## 2. KPI strip (`portfolioSummary` plus `buildAlerts`)
 

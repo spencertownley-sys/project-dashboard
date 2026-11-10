@@ -14,7 +14,9 @@ export async function requireOwner(): Promise<Viewer> {
   const { currentUser } = await import("@clerk/nextjs/server");
   const user = await currentUser();
   if (!user) redirect("/sign-in");
-  const emails = user.emailAddresses.map((e) => e.emailAddress);
-  if (!isOwnerEmail(emails, ownerEmails())) redirect("/not-authorized");
-  return { mode, email: user.primaryEmailAddress?.emailAddress ?? emails[0] ?? null };
+  // Only the verified primary address counts, so a secondary address added to another account can't pass.
+  const primary = user.primaryEmailAddress;
+  const verified = primary?.verification?.status === "verified";
+  if (!primary || !verified || !isOwnerEmail([primary.emailAddress], ownerEmails())) redirect("/not-authorized");
+  return { mode, email: primary.emailAddress };
 }

@@ -118,7 +118,7 @@ Pill: inline-flex, gap 5 px, padding 1 px 8 px, radius 99 px, 11.5 px semibold, 
 | FilterButton | Pill outline; pressed state inverts to `--fg` bg and `--bg` text; uses `aria-pressed`. |
 | Search | 200 px input, 1 px border, 8 px radius, placeholder "Search name, repo, host…". |
 | Table | Header 11.5 px uppercase muted, sortable headers are buttons with `aria-sort`. Cells 10 × 12 px padding, bottom border; row hover `--sunk`. Name semibold with repo in mono faint beneath. |
-| StepList | Grid 18 px checkbox / title / hours (mono 11.5 px). Done steps: title struck through in `--muted`. Delete button (×) appears on hover and focus. Add row: title input, hours input (step 0.5), Add button. |
+| StepList | Grid 18 px checkbox / title / hours (mono 11.5 px). Done steps: title struck through in `--faint`. Delete button (×) appears on hover and focus. Add row: title input, hours input (step 0.5), Add button. |
 | ArchNodes | Five flex boxes (min 140 px) on `--sunk`, uppercase label 11 px, value 12.5 px. |
 | DocDots | 3-column grid; filled dot `●` accent for 1, hollow `○` faint for 0. Labels: PRD, Tech spec, API design, UI/UX notes, Launch checklist, CLAUDE.md. |
 | ProviderCard | Header with provider name and either subtitle or capacity meter ("2 of 2 active" in stall color, 80 px bar). Rows: resource (mono 12 px) and project (12 px muted, right aligned; link when `project_id` is set), note on a second line. |

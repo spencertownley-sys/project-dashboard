@@ -53,6 +53,9 @@ test("adding a step and an idea", async ({ page }) => {
   await page.getByLabel("Hours", { exact: true }).fill("2");
   await page.getByRole("button", { name: "Add" }).nth(1).click();
   await expect(page.getByRole("checkbox", { name: `Write a privacy page ${tag}` })).toBeVisible();
+  await page.getByRole("button", { name: "Star HEIC support through Cloudflare Images" }).click();
+  await expect(page.getByRole("button", { name: "Unstar HEIC support through Cloudflare Images" })).toBeVisible();
+  await page.getByRole("button", { name: "Unstar HEIC support through Cloudflare Images" }).click();
   await page.goto("/ideas");
   await page.getByLabel("Idea", { exact: true }).fill(`Mobile app ${tag}`);
   await page.getByRole("button", { name: "Add idea" }).click();

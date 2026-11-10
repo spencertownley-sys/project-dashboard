@@ -63,7 +63,7 @@ Each requirement has an identifier for traceability into user stories (document 
 
 ### 4.1 Access
 
-- FR-1 [P1] The app MUST require Clerk sign-in and MUST admit only a user whose primary email address appears in `OWNER_EMAILS` (comma separated, case-insensitive, trimmed). Any other signed-in user MUST be sent to a "not authorized" page (`/not-authorized`) with a sign-out button. (Built check: any of the user's Clerk emails; see 9.2.)
+- FR-1 [P1] The app MUST require Clerk sign-in and MUST admit only a user whose primary email address appears in `OWNER_EMAILS` (comma separated, case-insensitive, trimmed). Any other signed-in user MUST be sent to a "not authorized" page (`/not-authorized`) with a sign-out button. The primary address must also be verified.
 - FR-2 [P1] When Clerk keys are absent, the app MUST run without auth only when `NODE_ENV !== 'production'` or `ALLOW_NO_AUTH=1`, and MUST show a visible "local mode · no sign-in" notice in the top bar. In production without keys it MUST fail closed with a setup page (`/setup`, status 503).
 - FR-3 [P1] Every server action MUST re-check the owner before reading or writing.
 
@@ -97,7 +97,7 @@ Each requirement has an identifier for traceability into user stories (document 
 
 ### 4.6 Ideas and housekeeping
 
-- FR-20 [P1] The Ideas page MUST group feature ideas by project and show a new-project parking lot; the owner MUST be able to add, star and delete ideas. Built: parking-lot ideas are added, starred and deleted on `/ideas`; feature ideas are added and deleted on the project page and listed read-only on `/ideas` (see 9.2).
+- FR-20 [P1] The Ideas page MUST group feature ideas by project and show a new-project parking lot; the owner MUST be able to add, star and delete ideas. Built: parking-lot ideas are added, starred and deleted on `/ideas`; feature ideas are added, starred and deleted on the project page and listed on `/ideas` grouped by project.
 - FR-21 [P1] The Housekeeping page MUST list archive, overlap and docs items, each with Approve and Skip, and an Undo back to pending. Decisions MUST NOT change anything outside the database.
 
 ### 4.7 Data and sync
@@ -135,7 +135,7 @@ Each requirement has an identifier for traceability into user stories (document 
 
 | Rule | Definition |
 |---|---|
-| Finish score | value × (pct ÷ 100) ÷ hours_left × 100, rounded to one decimal. Null when value, pct or hours_left is null or zero (built: pct 0 gives 0; see 9.2). |
+| Finish score | value × (pct ÷ 100) ÷ hours_left × 100, rounded to one decimal. Null when value, pct or hours_left is null, or hours_left is zero. A project at 0% scores 0. |
 | Active project | status not `archive` and not `idea`. |
 | Quick wins | Active, score not null, hours_left ≤ 15. Top 4 by score. |
 | Launch pushes | Active, score not null, value ≥ 4 and 15 < hours_left ≤ 60. Top 4 by score. |
@@ -182,13 +182,14 @@ No analytics product is used (single user). Metrics are read from the database: 
 17. The Vercel build seeds an empty production database (`npm run vercel-build` = migrate, seed, build).
 18. Queue positions are 0-based; the planner also has add-to-queue and remove-from-queue actions, and session links can be deleted (`addToQueue`, `removeFromQueue`, `deleteSession`).
 
+- Owner check uses only the verified primary email (resolved 10 Nov 2026).
+- A project at 0% has a finish score of 0, not null; it is a real value (resolved 10 Nov 2026).
+- Feature ideas are starred on the project page (resolved 10 Nov 2026).
+
 ### 9.2 Open
 
 1. Custom domain for the dashboard (needed before moving Clerk from its development to its production instance).
 2. Phase 3 model choice and weekly review cost ceiling.
-3. Owner check: the spec says the primary email; the build accepts any of the user's Clerk emails. Tighten the code or accept.
-4. Finish score with pct 0: the spec says null; the build returns 0. Only AI News Site (an idea project) is affected.
-5. Starring feature ideas: the spec allows it on `/ideas`; the build only stars parking-lot ideas. Add a star toggle to the project page or the Ideas page.
 
 ## 10. Approval
 

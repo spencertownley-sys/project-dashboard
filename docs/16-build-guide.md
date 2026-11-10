@@ -127,11 +127,11 @@ Phase 1 exit: document 04, section 2.
 - [x] `components/Signals.tsx` on the detail page with observed time.
 - Verify: fake-fetch test raises CI, database and repo alerts.
 
-### Step 2.7: Deploy
-
-- [ ] Vercel project, Neon integration, Clerk app, `OWNER_EMAILS`, `CRON_SECRET`, tokens (`HANDOFF.md`, document 14). Not yet deployed on 10 Nov 2026; this is an owner action, not a code step.
-
 Phase 2 exit: document 04, section 2.
+
+## Release: first deploy (owner action)
+
+Not a code step, and not done on 10 Nov 2026 (`HANDOFF.md`): import the repo in Vercel, connect Neon, create the Clerk app, set `OWNER_EMAILS`, `CRON_SECRET` and the sync tokens, deploy, sign in, press Sync now (document 14). The Phase 1 and Phase 2 exit gates that need production are checked after this.
 
 ## Phase 3: AI assist and more sources (planned)
 

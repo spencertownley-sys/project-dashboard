@@ -4,7 +4,7 @@ Version 1.0, 10 Nov 2026. Owner: Engineering.
 
 ## 1. Summary
 
-The app has one permission: "is the owner". The owner is any Clerk user with an email address listed in `OWNER_EMAILS`. Everyone else, signed in or not, sees no data. There are no roles, invitations, guests or share links (the mockup's optional read-only share link is dropped; decision). Two machine endpoints sit outside Clerk: `/api/health` (public, no data) and `/api/cron/sync` (bearer secret).
+The app has one permission: "is the owner". The owner is the Clerk user whose verified primary email address is listed in `OWNER_EMAILS`. Everyone else, signed in or not, sees no data. There are no roles, invitations, guests or share links (the mockup's optional read-only share link is dropped; decision). Two machine endpoints sit outside Clerk: `/api/health` (public, no data) and `/api/cron/sync` (bearer secret).
 
 ## 2. Auth modes
 
@@ -40,7 +40,7 @@ async function requireOwner(): Promise<{ mode; email: string | null }> {
 
 Every page calls it twice in practice (the `(app)` layout and `load()` in the page) and every server action calls it first. It is the only gate the data depends on; the proxy is a convenience that sends signed-out visitors to sign-in early.
 
-**Deviation to resolve.** The specification says the user's *primary* email must be in `OWNER_EMAILS`. The built check accepts the user if *any* of their Clerk email addresses is listed. With sign-ups restricted (section 4.1) the practical difference is small, but a verified secondary address on another account would pass. Either change `requireOwner()` to compare only `user.primaryEmailAddress` or accept this as a decision (document 02, section 9.2).
+**Decision.** Only the user's verified primary email counts. A secondary address, or an unverified primary, is refused, so a matching address added to another account can't pass.
 
 ## 4. Clerk configuration
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addIdea, addSession, addStep, deleteIdea, deleteSession } from "@/app/actions";
+import { addIdea, addSession, addStep, deleteIdea, deleteSession, toggleIdeaStar } from "@/app/actions";
 import { EditProjectForm } from "@/components/EditProjectForm";
 import { Signals } from "@/components/Signals";
 import { StepList } from "@/components/StepList";
@@ -211,8 +211,12 @@ export default async function ProjectPage({ params }: PageProps<"/projects/[id]"
               <ul className="plain">
                 {ideas.map((i) => (
                   <li key={i.id} style={{ display: "flex", gap: 6, alignItems: "baseline", justifyContent: "space-between" }}>
-                    <span>
-                      {i.starred ? "★ " : ""}
+                    <span style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
+                      <form action={toggleIdeaStar.bind(null, i.id, !i.starred)}>
+                        <button className="star" aria-pressed={i.starred} aria-label={i.starred ? `Unstar ${i.title}` : `Star ${i.title}`}>
+                          {i.starred ? "★" : "☆"}
+                        </button>
+                      </form>
                       {i.title}
                     </span>
                     <form action={deleteIdea.bind(null, i.id)}>
