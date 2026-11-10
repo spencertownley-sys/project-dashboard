@@ -1,0 +1,2001 @@
+{
+ "projects": [
+  {
+   "id": "taskparty",
+   "name": "TaskParty",
+   "repo": "ProjectManager",
+   "cat": "SaaS",
+   "status": "preview",
+   "pct": 75,
+   "hrs": 50,
+   "value": 4,
+   "last": "2026-11-08",
+   "sum": "Project and task suite in the Asana and Linear space, with a Microsoft 365 look.",
+   "urls": [
+    "taskparty-spencer-s-projects18.vercel.app",
+    "mail.taskparty.app (planned)"
+   ],
+   "sessions": [
+    "TaskParty views implementation",
+    "System review and improvements",
+    "Preview display"
+   ],
+   "arch": {
+    "Client": "Next.js 16 · React 19 · Tailwind 4 · shadcn on Fluent tokens",
+    "Host": "Vercel · project taskparty",
+    "Data": "Supabase “TaskParty” (us-west-1) · Drizzle · Realtime",
+    "Auth": "Clerk Organizations",
+    "Services": "Inngest jobs · PostHog · Resend and Stripe pending"
+   },
+   "hostTags": [
+    "Vercel",
+    "Supabase",
+    "Clerk",
+    "Inngest"
+   ],
+   "docs": {
+    "prd": 1,
+    "tech": 1,
+    "api": 1,
+    "ui": 1,
+    "launch": 0,
+    "claude": 1
+   },
+   "docNote": "16-part suite plus HANDOFF.md",
+   "next": [
+    [
+     "Create Clerk instances, test real sign-in, repair migration history",
+     8
+    ],
+    [
+     "Send notification email through Inngest and Resend",
+     8
+    ],
+    [
+     "Attachment upload to Supabase Storage",
+     6
+    ],
+    [
+     "Responsive, WCAG 2.2 AA and performance pass",
+     16
+    ],
+    [
+     "Landing page and beta onboarding for 10 testers",
+     8
+    ]
+   ],
+   "ideas": [
+    "MCP server so agents can read and update tasks",
+    "AI task drafting and thread summaries",
+    "Teams connector with task cards"
+   ],
+   "risks": [
+    "Real sign-in has never run end to end",
+    "Hosted migration history doesn’t match the files",
+    "Very large scope for one builder"
+   ]
+  },
+  {
+   "id": "nimbus",
+   "name": "NimbusWatch",
+   "repo": "AllClear",
+   "cat": "SaaS",
+   "status": "preview",
+   "pct": 80,
+   "hrs": 30,
+   "value": 3,
+   "last": "2026-10-10",
+   "sum": "Calm dashboard of weather, wildfire smoke, quakes, air quality and NWS alerts for saved locations.",
+   "urls": [
+    "web-production-41f16.up.railway.app"
+   ],
+   "sessions": [
+    "AllClear app from Claude chat"
+   ],
+   "arch": {
+    "Client": "Next.js 16 · Leaflet · Tailwind 4",
+    "Host": "Railway web + worker (Vercel config ready)",
+    "Data": "Supabase “allclear” · PostGIS · 9 migrations · Edge Function seed-snapshot",
+    "Auth": "Supabase Auth",
+    "Services": "NWS, FIRMS, USGS, AirNow, NHC and 10 more feeds · Resend · Web Push · Sentry"
+   },
+   "hostTags": [
+    "Railway",
+    "Supabase",
+    "GH Actions cron"
+   ],
+   "docs": {
+    "prd": 1,
+    "tech": 1,
+    "api": 1,
+    "ui": 1,
+    "launch": 1,
+    "claude": 1
+   },
+   "next": [
+    [
+     "Deploy the worker with all keys, confirm the cache fills, retire the keepalive",
+     4
+    ],
+    [
+     "Buy a domain and choose Vercel or Railway for the web app",
+     3
+    ],
+    [
+     "Sentry and alerts for stale pollers",
+     4
+    ],
+    [
+     "Launch checklist: RLS check, a11y, safety disclaimer",
+     10
+    ],
+    [
+     "Playwright smoke test from sign-up to alert",
+     6
+    ]
+   ],
+   "ideas": [
+    "Family safety circle that shares check-in status",
+    "AI morning briefing for each location",
+    "Evacuation zone and road closure overlays"
+   ],
+   "risks": [
+    "Production secrets are missing, so the worker isn’t running",
+    "Free Supabase project pauses without the keepalive",
+    "Open-Meteo is licensed for non-commercial use only"
+   ],
+   "needs": "Rename the GitHub repo and buy the domain"
+  },
+  {
+   "id": "chrono",
+   "name": "Chronologue",
+   "repo": "chronologue",
+   "cat": "SaaS",
+   "status": "building",
+   "pct": 85,
+   "hrs": 20,
+   "value": 3,
+   "last": "2026-10-10",
+   "sum": "Build, import, filter and share timelines with an Excel template round trip.",
+   "urls": [],
+   "sessions": [],
+   "arch": {
+    "Client": "Next.js 16 · Base UI · vis-timeline · SheetJS",
+    "Host": "Not chosen (Dockerfile ready)",
+    "Data": "Supabase · likely the paused “Make Me A Timeline” project",
+    "Auth": "Supabase Auth + Google",
+    "Services": "Sentry (optional)"
+   },
+   "hostTags": [
+    "Docker",
+    "Supabase"
+   ],
+   "docs": {
+    "prd": 1,
+    "tech": 1,
+    "api": 1,
+    "ui": 1,
+    "launch": 1,
+    "claude": 1
+   },
+   "next": [
+    [
+     "Pick a host, create the prod database, push migrations, set the domain",
+     5
+    ],
+    [
+     "Google OAuth, redirect URLs and an SMTP sender",
+     3
+    ],
+    [
+     "Privacy and terms pages, CI workflow",
+     4
+    ],
+    [
+     "Launch checklist (0 of 59 done)",
+     8
+    ]
+   ],
+   "ideas": [
+    "PNG and PDF export for presentations",
+    "Pull dated events out of pasted text or a PDF with AI",
+    "Embeddable public timeline widget"
+   ],
+   "risks": [
+    "Supabase free plan is full (2 of 2 active)",
+    "No host or domain decided",
+    "BCE and month-only dates unresolved"
+   ]
+  },
+  {
+   "id": "framevote",
+   "name": "FrameVote",
+   "repo": "framevote",
+   "cat": "Consumer app",
+   "status": "live",
+   "pct": 90,
+   "hrs": 13,
+   "value": 3,
+   "last": "2026-11-04",
+   "sum": "Share a photo batch, group near-duplicates, collect votes and get a fair leaderboard.",
+   "urls": [
+    "framevote.com",
+    "shortlist.spencertownley.workers.dev"
+   ],
+   "sessions": [
+    "Framevote deployment",
+    "Shortlist photo voting app"
+   ],
+   "arch": {
+    "Client": "React 18 SPA · Vite 6 · Tailwind 4",
+    "Host": "Cloudflare Worker “shortlist” (Hono API + assets)",
+    "Data": "D1 “shortlist” · R2 “shortlist-photos”",
+    "Auth": "None: owner token and one ballot per device",
+    "Services": "PostHog"
+   },
+   "hostTags": [
+    "Cloudflare Worker",
+    "D1",
+    "R2"
+   ],
+   "docs": {
+    "prd": 0,
+    "tech": 0,
+    "api": 0,
+    "ui": 0,
+    "launch": 0,
+    "claude": 0
+   },
+   "next": [
+    [
+     "Poll expiry and a Cron Trigger that purges D1 rows and R2 photos",
+     5
+    ],
+    [
+     "Rate limits or Turnstile on poll creation and uploads",
+     3
+    ],
+    [
+     "Privacy page and an owner “delete poll” button",
+     3
+    ],
+    [
+     "CI that runs tests and wrangler deploy",
+     2
+    ]
+   ],
+   "ideas": [
+    "HEIC support through Cloudflare Images",
+    "Flag blurry or eyes-closed frames with AI",
+    "Download the winners as a ZIP album"
+   ],
+   "risks": [
+    "R2 storage grows with no cleanup",
+    "Device ballots can be spoofed",
+    "Deploys run by hand from your machine"
+   ]
+  },
+  {
+   "id": "quiz",
+   "name": "Quiz Platform",
+   "repo": "quizplatform",
+   "cat": "SaaS",
+   "status": "preview",
+   "pct": 80,
+   "hrs": 28,
+   "value": 5,
+   "last": "2026-11-08",
+   "sum": "Personality and brain quizzes with a free result and paid one-time reports. Brand still open.",
+   "urls": [
+    "web-production-1692a.up.railway.app"
+   ],
+   "sessions": [
+    "Quiz monetization website"
+   ],
+   "arch": {
+    "Client": "Next.js 16 · Tailwind 4 · react-pdf · next/og cards",
+    "Host": "Railway (Vercel config also present)",
+    "Data": "Postgres · Drizzle",
+    "Auth": "Clerk Core 3",
+    "Services": "Stripe Checkout, Billing, Tax · Resend · PostHog · GA4"
+   },
+   "hostTags": [
+    "Railway",
+    "Postgres",
+    "Clerk",
+    "Stripe"
+   ],
+   "docs": {
+    "prd": 1,
+    "tech": 0,
+    "api": 0,
+    "ui": 0,
+    "launch": 0,
+    "claude": 1
+   },
+   "docNote": "REQUIREMENTS, QUIZ_CATALOG, QUIZ_STRUCTURES, CONTENT_GUIDE",
+   "next": [
+    [
+     "Point the Railway web service at main",
+     0.5
+    ],
+    [
+     "Pick brand and domain, add live Clerk, Stripe and Resend keys",
+     6
+    ],
+    [
+     "Review and publish the 20 draft quizzes",
+     15
+    ],
+    [
+     "Stripe test purchases, a refund and a cancel; add the cron service",
+     4
+    ],
+    [
+     "Lawyer review of terms and auto-renewal",
+     3
+    ]
+   ],
+   "ideas": [
+    "AI-personalized narrative for the Deep Report",
+    "Spanish versions of the top 10 quizzes",
+    "Auto-export results as Story images"
+   ],
+   "risks": [
+    "All 20 quizzes are drafts, so nothing is for sale",
+    "Auto-renewal law exposure",
+    "Mental-health screeners carry liability"
+   ],
+   "needs": "Railway still deploys an old branch"
+  },
+  {
+   "id": "mentionful",
+   "name": "Mentionful",
+   "repo": "SEOBuilder",
+   "cat": "SaaS",
+   "status": "live",
+   "pct": 65,
+   "hrs": 60,
+   "value": 5,
+   "last": "2026-10-10",
+   "sum": "SEO and AI-answer visibility: site audit, scores, drafted fixes and mention tracking across 4 AI engines.",
+   "urls": [
+    "mentionful.com",
+    "betterseobuilder.com"
+   ],
+   "sessions": [
+    "SEO/GEO chat function extraction"
+   ],
+   "arch": {
+    "Client": "Next.js 16 · Tailwind",
+    "Host": "Railway “seobuilder”: web + landing services",
+    "Data": "Railway Postgres · job queue in Postgres",
+    "Auth": "Built-in accounts",
+    "Services": "Claude, OpenAI, Gemini, Perplexity · PageSpeed Insights"
+   },
+   "hostTags": [
+    "Railway",
+    "Postgres",
+    "LLM APIs"
+   ],
+   "docs": {
+    "prd": 1,
+    "tech": 1,
+    "api": 0,
+    "ui": 0,
+    "launch": 0,
+    "claude": 1
+   },
+   "next": [
+    [
+     "Engine keys in prod, cost benchmark, per-run metering",
+     8
+    ],
+    [
+     "Email: password reset, verification, weekly report",
+     10
+    ],
+    [
+     "Stripe plans at $29, $99 and $299",
+     14
+    ],
+    [
+     "Structured parser for AI answers",
+     8
+    ],
+    [
+     "Rank data from DataForSEO and Search Console",
+     20
+    ]
+   ],
+   "ideas": [
+    "Track Google AI Overviews",
+    "Auto-PR or CMS plugin that applies the drafted fixes",
+    "White-label PDF reports for agencies"
+   ],
+   "risks": [
+    "AI-visibility features don’t work without engine keys",
+    "LLM cost per run isn’t metered",
+    "No password reset yet"
+   ]
+  },
+  {
+   "id": "earshot",
+   "name": "Earshot",
+   "repo": "social-listening-app",
+   "cat": "SaaS",
+   "status": "live",
+   "pct": 70,
+   "hrs": 55,
+   "value": 4,
+   "last": "2026-10-10",
+   "sum": "Self-serve social listening with tunable profiles, alerts and digests.",
+   "urls": [
+    "earshot-listening.up.railway.app"
+   ],
+   "sessions": [
+    "Social listening app extraction"
+   ],
+   "arch": {
+    "Client": "Next.js 16 · Tailwind 4 · Recharts",
+    "Host": "Railway “earshot” + volume",
+    "Data": "Railway Postgres · nightly backups 08:00 UTC",
+    "Auth": "Email + password, invites, roles",
+    "Services": "Claude Haiku and Opus · Reddit, X, Bluesky, YouTube, RSS · Resend · Slack"
+   },
+   "hostTags": [
+    "Railway",
+    "Postgres",
+    "Claude API"
+   ],
+   "docs": {
+    "prd": 1,
+    "tech": 1,
+    "api": 1,
+    "ui": 0,
+    "launch": 0,
+    "claude": 0
+   },
+   "docNote": "BUILD_PLAN 39 of 43 done",
+   "next": [
+    [
+     "Stripe billing and plan limits",
+     16
+    ],
+    [
+     "Password reset and Google sign-in",
+     8
+    ],
+    [
+     "Rollback UI and boolean query editor",
+     8
+    ],
+    [
+     "Landing and pricing page, onboarding, domain",
+     10
+    ],
+    [
+     "Semantic topics with pgvector",
+     12
+    ]
+   ],
+   "ideas": [
+    "Competitor share of voice",
+    "AI reply drafts you copy, never auto-post",
+    "Weekly executive report to Slack or PDF"
+   ],
+   "risks": [
+    "Reddit, X and Meta API approvals and costs",
+    "Scheduler can’t run on more than one instance",
+    "Unused Supabase schema drifting from the real one"
+   ],
+   "needs": "Finish owner setup at /setup and add the Resend key"
+  },
+  {
+   "id": "book",
+   "name": "Book Builder",
+   "repo": "bookbuilder",
+   "cat": "SaaS",
+   "status": "building",
+   "pct": 75,
+   "hrs": 35,
+   "value": 5,
+   "last": "2026-10-11",
+   "sum": "Personalized children’s picture books, shared with family and printed as hardcovers.",
+   "urls": [],
+   "sessions": [
+    "Bookbuilder website build"
+   ],
+   "arch": {
+    "Client": "Next.js 16 · Konva editor · jsPDF",
+    "Host": "Vercel (planned)",
+    "Data": "Postgres + Supabase Storage (not provisioned)",
+    "Auth": "Clerk",
+    "Services": "Stripe + Tax · Lulu Print API · fal.ai or gpt-image-1"
+   },
+   "hostTags": [
+    "Vercel",
+    "Supabase",
+    "Clerk",
+    "Stripe",
+    "Lulu"
+   ],
+   "docs": {
+    "prd": 0,
+    "tech": 0,
+    "api": 0,
+    "ui": 0,
+    "launch": 0,
+    "claude": 0
+   },
+   "next": [
+    [
+     "Provision database, storage, Clerk prod and Stripe; deploy",
+     6
+    ],
+    [
+     "Lulu sandbox test, then order one real printed copy",
+     6
+    ],
+    [
+     "Upscale the 12 template backgrounds for print",
+     3
+    ],
+    [
+     "Tests for checkout, webhooks and fulfilment",
+     10
+    ],
+    [
+     "Domain, COPPA-aware legal pages, pricing copy",
+     6
+    ]
+   ],
+   "ideas": [
+    "AI story draft from a few facts about the child",
+    "Gift a book credit",
+    "Yearly keepsake series bundle"
+   ],
+   "risks": [
+    "Supabase free plan is full",
+    "Template art prints at about 117 dpi",
+    "Children’s photos and COPPA"
+   ]
+  },
+  {
+   "id": "downbeat",
+   "name": "Downbeat",
+   "repo": "downbeat",
+   "cat": "SaaS",
+   "status": "live",
+   "pct": 80,
+   "hrs": 30,
+   "value": 3,
+   "last": "2026-10-17",
+   "sum": "Bands share a link, members tap availability, the leader sees the overlap.",
+   "urls": [
+    "trydownbeat.app"
+   ],
+   "sessions": [
+    "Trydownbeat.app redesign",
+    "Downbeat login diagnosis"
+   ],
+   "arch": {
+    "Client": "Next.js 16 · shadcn · Recharts",
+    "Host": "Railway (Dockerfile)",
+    "Data": "Railway Postgres · Drizzle, 8 migrations",
+    "Auth": "Clerk for leaders; links, passkeys and recovery codes for members",
+    "Services": "None yet"
+   },
+   "hostTags": [
+    "Railway",
+    "Postgres",
+    "Clerk"
+   ],
+   "docs": {
+    "prd": 0,
+    "tech": 0,
+    "api": 0,
+    "ui": 0,
+    "launch": 0,
+    "claude": 0
+   },
+   "next": [
+    [
+     "Setlist builder with vote and veto",
+     14
+    ],
+    [
+     "Email reminders and best-slot notices",
+     8
+    ],
+    [
+     "Calendar export (.ics)",
+     5
+    ],
+    [
+     "CI for tests, lint and build",
+     2
+    ],
+    [
+     "Analytics and a feedback link",
+     2
+    ]
+   ],
+   "ideas": [
+    "Gig mode with venue, load-in and set length",
+    "“Book this slot” that confirms with everyone",
+    "Split rehearsal room costs"
+   ],
+   "risks": [
+    "A drifting copy lives in the Database repo",
+    "No CI",
+    "Anyone with the member link can edit"
+   ],
+   "needs": "Phone sideways-scroll fix found but not pushed"
+  },
+  {
+   "id": "vyg",
+   "name": "VYGR Cruises",
+   "repo": "vyg",
+   "cat": "Content + search",
+   "status": "stalled",
+   "pct": 35,
+   "hrs": 45,
+   "value": 2,
+   "last": "2026-05-27",
+   "sum": "Independent cruise search by destination, port, ship and length.",
+   "urls": [
+    "vygrcruises.com"
+   ],
+   "sessions": [],
+   "arch": {
+    "Client": "Next.js 16 · Tailwind 4",
+    "Host": "Railway (web and worker in one container)",
+    "Data": "SQLite on a volume · Drizzle",
+    "Auth": "Lucia, admin only",
+    "Services": "Unsplash and Wikimedia images"
+   },
+   "hostTags": [
+    "Railway",
+    "SQLite"
+   ],
+   "docs": {
+    "prd": 0,
+    "tech": 0,
+    "api": 0,
+    "ui": 0,
+    "launch": 0,
+    "claude": 1
+   },
+   "next": [
+    [
+     "Choose a data source: affiliate feed or a reviewed crawl",
+     8
+    ],
+    [
+     "First real source with live prices",
+     20
+    ],
+    [
+     "Price labels, affiliate links and disclosures",
+     4
+    ],
+    [
+     "Stop committing the database; scheduled refresh",
+     3
+    ],
+    [
+     "SEO content and launch",
+     8
+    ]
+   ],
+   "ideas": [
+    "Fare-drop alerts",
+    "Compare sailings side by side",
+    "Cruises from my nearest port"
+   ],
+   "risks": [
+    "Shows invented fares today",
+    "Terms-of-service exposure if crawling",
+    "README overstates the crawler"
+   ]
+  },
+  {
+   "id": "strata",
+   "name": "Strata",
+   "repo": "Database · branch strata-spec-reconciliation",
+   "cat": "SaaS",
+   "status": "stalled",
+   "pct": 40,
+   "hrs": 90,
+   "value": 3,
+   "last": "2026-10-12",
+   "sum": "Structured work management with custom item types and a spreadsheet-grade grid with preview and undo.",
+   "urls": [],
+   "sessions": [
+    "Strata work-management platform",
+    "Strata spec reconciliation fixes"
+   ],
+   "arch": {
+    "Client": "Next.js 15 · TanStack Table and Virtual · Tailwind 4",
+    "Host": "Not deployed (docker-compose)",
+    "Data": "Postgres 16 · Drizzle · RLS per workspace",
+    "Auth": "Magic link",
+    "Services": "None yet"
+   },
+   "hostTags": [
+    "Docker",
+    "Postgres"
+   ],
+   "docs": {
+    "prd": 1,
+    "tech": 1,
+    "api": 1,
+    "ui": 1,
+    "launch": 1,
+    "claude": 1
+   },
+   "docNote": "Launch checklist 0 of 164",
+   "next": [
+    [
+     "Move Strata into its own repo",
+     1
+    ],
+    [
+     "Provision Postgres and deploy a preview",
+     6
+    ],
+    [
+     "Category trees and variant inheritance",
+     40
+    ],
+    [
+     "Launch checklist pass",
+     30
+    ]
+   ],
+   "ideas": [
+    "Excel import with change-set preview",
+    "Saved grid views per role",
+    "AI bulk edits proposed as change sets"
+   ],
+   "risks": [
+    "Overlaps with TaskParty",
+    "Lives on a branch of an unrelated repo",
+    "Rough estimate; needs a proper review"
+   ],
+   "needs": "Session is waiting on database and Vercel access"
+  },
+  {
+   "id": "nestcraft",
+   "name": "NestCraft",
+   "repo": "NestCraft (private)",
+   "cat": "App",
+   "status": "unknown",
+   "pct": null,
+   "hrs": null,
+   "value": null,
+   "last": "2026-10-10",
+   "sum": "Private repo. This session wasn’t allowed to open it, so it isn’t assessed yet.",
+   "urls": [],
+   "sessions": [
+    "NestCraft app creation"
+   ],
+   "arch": null,
+   "hostTags": [],
+   "docs": null,
+   "next": [],
+   "ideas": [],
+   "risks": [
+    "Grant read access to include it"
+   ]
+  },
+  {
+   "id": "smoosh",
+   "name": "Smoosh",
+   "repo": "Merge_Game1",
+   "cat": "Game",
+   "status": "live",
+   "pct": 85,
+   "hrs": 30,
+   "value": 3,
+   "last": "2026-11-08",
+   "sum": "Physics merge game in a watercolor fantasy world, with endless and story modes.",
+   "urls": [
+    "spencertownley-sys.github.io/Merge_Game1"
+   ],
+   "sessions": [
+    "Smoosh fruit merge game",
+    "Game level review tool"
+   ],
+   "arch": {
+    "Client": "React 19 · PixiJS 8 · Rapier2D in a worker · installable PWA",
+    "Host": "GitHub Pages (Actions deploy, Playwright CI)",
+    "Data": "IndexedDB on device",
+    "Auth": "None",
+    "Services": "Higgsfield art"
+   },
+   "hostTags": [
+    "GitHub Pages",
+    "PWA"
+   ],
+   "docs": {
+    "prd": 1,
+    "tech": 0,
+    "api": 1,
+    "ui": 1,
+    "launch": 0,
+    "claude": 1
+   },
+   "docNote": "Plus game design, art direction, journey plan",
+   "next": [
+    [
+     "Levels 35–41 and the finale",
+     14
+    ],
+    [
+     "Act cards and the epilogue",
+     6
+    ],
+    [
+     "Daily Glow seeded run",
+     4
+    ],
+    [
+     "Real-device playtest and performance",
+     6
+    ]
+   ],
+   "ideas": [
+    "Skylight Album collection screen",
+    "Seed challenges shared by link",
+    "App store build with Capacitor"
+   ],
+   "risks": [
+    "Mobile Lighthouse score around 0.8",
+    "Working title isn’t final"
+   ]
+  },
+  {
+   "id": "jimothy",
+   "name": "JIMOTHY: A Seattle Story",
+   "repo": "jimothy",
+   "cat": "Game",
+   "status": "live",
+   "pct": 60,
+   "hrs": 56,
+   "value": 2,
+   "last": "2026-11-09",
+   "sum": "Cozy platformer starring Ballard’s short-spined raccoon.",
+   "urls": [
+    "spencertownley-sys.github.io/jimothy",
+    "spencertownley.com/play/jimothy"
+   ],
+   "sessions": [
+    "Jimothy: A Seattle Story"
+   ],
+   "arch": {
+    "Client": "Phaser 3.90 · TypeScript · Tiled maps",
+    "Host": "GitHub Pages",
+    "Data": "localStorage saves",
+    "Auth": "None",
+    "Services": "Higgsfield art · Epidemic Sound audio"
+   },
+   "hostTags": [
+    "GitHub Pages"
+   ],
+   "docs": {
+    "prd": 1,
+    "tech": 1,
+    "api": 0,
+    "ui": 1,
+    "launch": 1,
+    "claude": 1
+   },
+   "docNote": "GDD, level specs, asset manifest, QA 0 of 45",
+   "next": [
+    [
+     "World 4 and the Bridge Troll boss",
+     20
+    ],
+    [
+     "World 5, ending and secret level",
+     16
+    ],
+    [
+     "Sprite animation frames",
+     12
+    ],
+    [
+     "QA checklist and difficulty tuning",
+     8
+    ]
+   ],
+   "ideas": [
+    "Speedrun timer with par medals",
+    "Daily remix level",
+    "Phone app with Capacitor"
+   ],
+   "risks": [
+    "Based on a real local raccoon; check likeness",
+    "Sprites are single poses",
+    "Music licence for a native app"
+   ]
+  },
+  {
+   "id": "more",
+   "name": "MORE.",
+   "repo": "More_A_Playable_Story",
+   "cat": "Game",
+   "status": "live",
+   "pct": 25,
+   "hrs": 200,
+   "value": 3,
+   "last": "2026-09-26",
+   "sum": "16-bit story game about the paperclip maximizer. You play Pip, a factory AI.",
+   "urls": [
+    "makemorepaperclips.com"
+   ],
+   "sessions": [
+    "SNES game story: paperclip thought experiment",
+    "Paperclip Drift vertical slice"
+   ],
+   "arch": {
+    "Client": "Plain JS canvas engine at 384×288",
+    "Host": "GitHub Pages",
+    "Data": "localStorage save",
+    "Auth": "None",
+    "Services": "Higgsfield art · Python pixel-snap tool"
+   },
+   "hostTags": [
+    "GitHub Pages"
+   ],
+   "docs": {
+    "prd": 0,
+    "tech": 0,
+    "api": 0,
+    "ui": 0,
+    "launch": 0,
+    "claude": 0
+   },
+   "docNote": "STORY.md story bible",
+   "next": [
+    [
+     "Mailing list and an itch.io page",
+     3
+    ],
+    [
+     "Chapter 2 “The Floor”",
+     40
+    ],
+    [
+     "Chapter 3 “The Town”",
+     50
+    ],
+    [
+     "Chapters 4–6 and epilogue",
+     100
+    ],
+    [
+     "Playtest and save migration",
+     8
+    ]
+   ],
+   "ideas": [
+    "Clip-count speedrun board",
+    "Achievements for alignment choices",
+    "Desktop build for Steam"
+   ],
+   "risks": [
+    "Each chapter needs new mechanics and art",
+    "Higgsfield licensing for a commercial release",
+    "Comparisons to Universal Paperclips"
+   ],
+   "needs": "A pull request is waiting for your merge"
+  },
+  {
+   "id": "splitg",
+   "name": "Split the G",
+   "repo": "Database · branch split-the-g-game",
+   "cat": "Game",
+   "status": "stalled",
+   "pct": null,
+   "hrs": null,
+   "value": null,
+   "last": "2026-08-30",
+   "sum": "Three-mode stout-pouring iPhone game in SwiftUI. Not assessed yet.",
+   "urls": [],
+   "sessions": [
+    "Split the G iPhone game"
+   ],
+   "arch": {
+    "Client": "SwiftUI · Xcode project SplitTheG",
+    "Host": "App Store (not submitted)",
+    "Data": "On device",
+    "Auth": "None",
+    "Services": "Game Center"
+   },
+   "hostTags": [
+    "iOS"
+   ],
+   "docs": {
+    "prd": 0,
+    "tech": 0,
+    "api": 0,
+    "ui": 0,
+    "launch": 0,
+    "claude": 0
+   },
+   "next": [],
+   "ideas": [],
+   "risks": [
+    "Lives on a branch of the Database repo"
+   ]
+  },
+  {
+   "id": "cruise",
+   "name": "Cruise News You Can Use",
+   "repo": "CruiseNewsYouCanUse",
+   "cat": "Content",
+   "status": "live",
+   "pct": 70,
+   "hrs": 20,
+   "value": 3,
+   "last": "2026-11-10",
+   "sum": "AI-written weekday cruise industry brief with a social pulse page and a podcast source.",
+   "urls": [
+    "spencertownley-sys.github.io/CruiseNewsYouCanUse"
+   ],
+   "sessions": [
+    "Cruise News weekday brief scheduler",
+    "Cruise News daily brief runner",
+    "Troubleshooting",
+    "Cruise brief publisher"
+   ],
+   "arch": {
+    "Client": "Static HTML with client-side search",
+    "Host": "GitHub Pages",
+    "Data": "Markdown in data/ rendered by publish_post.py",
+    "Auth": "None",
+    "Services": "Scheduled Claude task, weekdays 6:52 PT · Bluesky and X · NotebookLM"
+   },
+   "hostTags": [
+    "GitHub Pages",
+    "Claude schedule"
+   ],
+   "docs": {
+    "prd": 0,
+    "tech": 0,
+    "api": 0,
+    "ui": 0,
+    "launch": 0,
+    "claude": 0
+   },
+   "next": [
+    [
+     "Reliable schedule with a missed-day alert",
+     4
+    ],
+    [
+     "RSS feed and email signup",
+     5
+    ],
+    [
+     "Custom domain, share tags, analytics",
+     2
+    ],
+    [
+     "Feed Social Pulse from Earshot, or remove it",
+     4
+    ],
+    [
+     "Automate the podcast with TTS",
+     6
+    ]
+   ],
+   "ideas": [
+    "Follow pages per cruise line and ship",
+    "Deal of the week from VYGR fares",
+    "Weekly email with CCL, NCLH and RCL prices"
+   ],
+   "risks": [
+    "Automation lives outside the repo",
+    "No review step for AI factual errors",
+    "Missed days need backfills"
+   ],
+   "needs": "Add the repo to the “Cruise News weekday brief” scheduled task"
+  },
+  {
+   "id": "zebra",
+   "name": "Spotted Zebra",
+   "repo": "spotted_zebra",
+   "cat": "Content",
+   "status": "live",
+   "pct": 90,
+   "hrs": 6,
+   "value": 3,
+   "last": "2026-11-08",
+   "sum": "Site for the Seattle party cover band: bookings, shows, music and blog.",
+   "urls": [
+    "spottedzebra.party"
+   ],
+   "sessions": [
+    "Spotted zebra site updates",
+    "Spotted Zebra band website"
+   ],
+   "arch": {
+    "Client": "Jekyll · plain JS jukebox and keyboard",
+    "Host": "GitHub Pages, daily scheduled-post workflow",
+    "Data": "YAML in _data",
+    "Auth": "None",
+    "Services": "Cloudflare DNS and Email Routing · FormSubmit"
+   },
+   "hostTags": [
+    "GitHub Pages",
+    "Cloudflare DNS"
+   ],
+   "docs": {
+    "prd": 0,
+    "tech": 0,
+    "api": 0,
+    "ui": 0,
+    "launch": 0,
+    "claude": 0
+   },
+   "next": [
+    [
+     "Add 10–20 gig photos",
+     1.5
+    ],
+    [
+     "Search Console and Google Business Profile",
+     2
+    ],
+    [
+     "Retire the old Wix site",
+     1
+    ],
+    [
+     "Check licensing for cover recordings",
+     1
+    ],
+    [
+     "Fix the “(2027 Guide)” post title",
+     0.5
+    ]
+   ],
+   "ideas": [
+    "Sync shows from Bandsintown",
+    "Downloadable press kit PDF",
+    "Song request voting before gigs"
+   ],
+   "risks": [
+    "Licensing for posted covers",
+    "GitHub stops scheduled workflows after 60 idle days",
+    "8 MB hero video"
+   ]
+  },
+  {
+   "id": "personal",
+   "name": "spencertownley.com",
+   "repo": "spencertownleysite",
+   "cat": "Portfolio",
+   "status": "live",
+   "pct": 85,
+   "hrs": 16,
+   "value": 4,
+   "last": "2026-10-10",
+   "sum": "Personal portfolio with a photoreal Room mode and a 3D Brain mode.",
+   "urls": [
+    "spencertownley.com"
+   ],
+   "sessions": [
+    "Personal professional website"
+   ],
+   "arch": {
+    "Client": "React 19 · Vite 8 · three.js · WebGL depth shader · d3-geo",
+    "Host": "Railway “spencertownley-site” behind Cloudflare DNS",
+    "Data": "Static",
+    "Auth": "None",
+    "Services": "Higgsfield and Depth Anything assets"
+   },
+   "hostTags": [
+    "Railway",
+    "Cloudflare DNS"
+   ],
+   "docs": {
+    "prd": 0,
+    "tech": 0,
+    "api": 0,
+    "ui": 0,
+    "launch": 0,
+    "claude": 1
+   },
+   "next": [
+    [
+     "Resume PDF and career story",
+     4
+    ],
+    [
+     "Landscape and wildlife picks, video reel",
+     4
+    ],
+    [
+     "Trip itinerary and Brain copy",
+     4
+    ],
+    [
+     "Email routing and analytics",
+     1
+    ],
+    [
+     "Lighthouse and accessibility pass",
+     3
+    ]
+   ],
+   "ideas": [
+    "“Now building” feed from this dashboard",
+    "Case-study pages with metrics",
+    "Clickable travel map with photos"
+   ],
+   "risks": [
+    "Waiting on your content",
+    "Heavy payload on phones",
+    "Jimothy build is copied in by hand"
+   ]
+  },
+  {
+   "id": "photo",
+   "name": "Townley Photography",
+   "repo": "townley-photography-site",
+   "cat": "Business site",
+   "status": "live",
+   "pct": 80,
+   "hrs": 12,
+   "value": 4,
+   "last": "2026-09-21",
+   "sum": "Portraits, real estate, prints and video around Puget Sound.",
+   "urls": [
+    "townleyphotography.com"
+   ],
+   "sessions": [],
+   "arch": {
+    "Client": "Static HTML and CSS",
+    "Host": "Cloudflare Pages or GitHub Pages (unclear)",
+    "Data": "Static",
+    "Auth": "None",
+    "Services": "Formspree"
+   },
+   "hostTags": [
+    "Cloudflare Pages?",
+    "GitHub Pages?"
+   ],
+   "docs": {
+    "prd": 0,
+    "tech": 0,
+    "api": 0,
+    "ui": 0,
+    "launch": 0,
+    "claude": 0
+   },
+   "docNote": "llms.txt and sitemap only",
+   "next": [
+    [
+     "Make the newsletter signup work",
+     1.5
+    ],
+    [
+     "Video embeds on /video",
+     3
+    ],
+    [
+     "Print checkout with Stripe Payment Links",
+     4
+    ],
+    [
+     "Pick one host and add a README",
+     1.5
+    ],
+    [
+     "WebP images and lazy loading",
+     2
+    ]
+   ],
+   "ideas": [
+    "Client proofing galleries",
+    "Booking with a deposit",
+    "Real estate price calculator"
+   ],
+   "risks": [
+    "Uploaded build with no source files",
+    "Subscribe button does nothing on 11 pages"
+   ]
+  },
+  {
+   "id": "creative",
+   "name": "Townley Creative",
+   "repo": "townleycreative",
+   "cat": "Business site",
+   "status": "building",
+   "pct": 5,
+   "hrs": 27,
+   "value": 2,
+   "last": "2026-10-17",
+   "sum": "Higgsfield site scaffold; five layouts proposed on 9 Nov.",
+   "urls": [],
+   "sessions": [
+    "Townley Creative website"
+   ],
+   "arch": {
+    "Client": "TanStack Start · React 19 · Higgsfield Quanta UI",
+    "Host": "Cloudflare Workers through Higgsfield",
+    "Data": "None yet (D1 and R2 available)",
+    "Auth": "None",
+    "Services": "Higgsfield generation SDK"
+   },
+   "hostTags": [
+    "Cloudflare Worker",
+    "Higgsfield"
+   ],
+   "docs": {
+    "prd": 0,
+    "tech": 0,
+    "api": 0,
+    "ui": 0,
+    "launch": 0,
+    "claude": 0
+   },
+   "next": [
+    [
+     "Pick one of the five proposed layouts",
+     1
+    ],
+    [
+     "Define services and content",
+     3
+    ],
+    [
+     "Build the pages",
+     16
+    ],
+    [
+     "Inquiry form",
+     5
+    ],
+    [
+     "Domain and SEO",
+     3
+    ]
+   ],
+   "ideas": [
+    "Proofing galleries on R2",
+    "AI mood boards through Higgsfield",
+    "Booking with availability"
+   ],
+   "risks": [
+    "Overlaps the photography and personal sites",
+    "Deploy config is generated outside the repo"
+   ],
+   "needs": "Choose one of the five layouts"
+  },
+  {
+   "id": "amanda",
+   "name": "Amanda Williams Portfolio",
+   "repo": "Amanda-Williams-Portfolio",
+   "cat": "Portfolio",
+   "status": "building",
+   "pct": 70,
+   "hrs": 4,
+   "value": 2,
+   "last": "2026-09-24",
+   "sum": "One-page portfolio and resume for a project manager’s job search.",
+   "urls": [],
+   "sessions": [],
+   "arch": {
+    "Client": "Single HTML file",
+    "Host": "Cloudflare Pages (planned)",
+    "Data": "Static",
+    "Auth": "None",
+    "Services": "None"
+   },
+   "hostTags": [
+    "Cloudflare Pages"
+   ],
+   "docs": {
+    "prd": 0,
+    "tech": 0,
+    "api": 0,
+    "ui": 0,
+    "launch": 0,
+    "claude": 0
+   },
+   "docNote": "Hosting guide for the owner",
+   "next": [
+    [
+     "Move the site to the repo root, fix the README",
+     0.5
+    ],
+    [
+     "Share tags, favicon, structured data, resume PDF",
+     1.5
+    ],
+    [
+     "Pull images out into WebP files",
+     1
+    ],
+    [
+     "Domain, deploy and email routing with Amanda",
+     1
+    ]
+   ],
+   "ideas": [
+    "Downloadable resume",
+    "Case-study pages",
+    "Contact form instead of a mailto link"
+   ],
+   "risks": [
+    "Waiting on the owner to buy a domain",
+    "Personal email address is public"
+   ],
+   "needs": "Amanda needs to buy a domain"
+  },
+  {
+   "id": "mariners",
+   "name": "Mariners Prediction Hub",
+   "repo": "mariners-tracker",
+   "cat": "Tool",
+   "status": "archive",
+   "pct": 40,
+   "hrs": 10,
+   "value": 1,
+   "last": "2026-09-12",
+   "sum": "Friends guess monthly Mariners wins. Archived on GitHub; dormant until April.",
+   "urls": [],
+   "sessions": [],
+   "arch": {
+    "Client": "Single HTML file",
+    "Host": "None",
+    "Data": "localStorage + JSON",
+    "Auth": "None",
+    "Services": "None"
+   },
+   "hostTags": [],
+   "docs": {
+    "prd": 0,
+    "tech": 0,
+    "api": 0,
+    "ui": 0,
+    "launch": 0,
+    "claude": 0
+   },
+   "next": [
+    [
+     "Fetch records from the MLB Stats API",
+     3
+    ],
+    [
+     "Shared storage so guesses sync",
+     4
+    ],
+    [
+     "2027 season reset and leaderboard",
+     2
+    ]
+   ],
+   "ideas": [
+    "Season-long leaderboard",
+    "Reminder to submit guesses"
+   ],
+   "risks": [
+    "Friends’ names in a public CSV"
+   ]
+  },
+  {
+   "id": "timeline",
+   "name": "timeline_web_app.py",
+   "repo": "timeline_web_app.py",
+   "cat": "Tool",
+   "status": "archive",
+   "pct": 2,
+   "hrs": null,
+   "value": 1,
+   "last": "2026-05-22",
+   "sum": "Untouched Streamlit template. Chronologue covers the same idea.",
+   "urls": [],
+   "sessions": [],
+   "arch": null,
+   "hostTags": [
+    "Streamlit"
+   ],
+   "docs": null,
+   "next": [],
+   "ideas": [],
+   "risks": []
+  },
+  {
+   "id": "ainews",
+   "name": "AI News Site",
+   "repo": "AI_news_site",
+   "cat": "Content",
+   "status": "idea",
+   "pct": 0,
+   "hrs": 20,
+   "value": 2,
+   "last": "2026-10-17",
+   "sum": "Empty repo. Could reuse the Cruise News pipeline.",
+   "urls": [],
+   "sessions": [],
+   "arch": null,
+   "hostTags": [],
+   "docs": null,
+   "next": [
+    [
+     "Define the concept",
+     2
+    ],
+    [
+     "Fork the Cruise News generator",
+     6
+    ],
+    [
+     "Ingestion and summaries on a schedule",
+     8
+    ],
+    [
+     "Newsletter and SEO basics",
+     4
+    ]
+   ],
+   "ideas": [],
+   "risks": [
+    "Crowded niche"
+   ]
+  },
+  {
+   "id": "promovault",
+   "name": "PromoVault",
+   "repo": "Database (main history) · promo-offer-studio",
+   "cat": "SaaS",
+   "status": "archive",
+   "pct": null,
+   "hrs": null,
+   "value": null,
+   "last": "2026-09-06",
+   "sum": "Trade promotion and product data system for cruise marketing. Promo Offer Studio is archived; a migration spec targets Power Apps.",
+   "urls": [],
+   "sessions": [
+    "TPM/PIM SaaS",
+    "Promo offer studio app",
+    "Promo offer studio live"
+   ],
+   "arch": null,
+   "hostTags": [],
+   "docs": null,
+   "next": [],
+   "ideas": [],
+   "risks": []
+  }
+ ],
+ "infrastructure": [
+  {
+   "prov": "Cloudflare",
+   "sub": "Workers, D1, R2, DNS, Pages",
+   "items": [
+    [
+     "Worker shortlist",
+     "FrameVote",
+     "Custom domains framevote.com and www"
+    ],
+    [
+     "D1 shortlist",
+     "FrameVote",
+     "No expiry or cleanup yet"
+    ],
+    [
+     "R2 shortlist-photos",
+     "FrameVote",
+     "Grows with every poll"
+    ],
+    [
+     "Worker (Higgsfield-managed)",
+     "Townley Creative",
+     "Config generated at deploy"
+    ],
+    [
+     "DNS spencertownley.com",
+     "spencertownley.com",
+     "Proxied to Railway"
+    ],
+    [
+     "DNS + Email Routing spottedzebra.party",
+     "Spotted Zebra",
+     "contact@ and booking@ to Gmail"
+    ],
+    [
+     "Pages townleyphotography.com?",
+     "Townley Photography",
+     "Host unconfirmed"
+    ]
+   ]
+  },
+  {
+   "prov": "Railway",
+   "sub": "About 8 services",
+   "items": [
+    [
+     "seobuilder: web, landing",
+     "Mentionful",
+     ""
+    ],
+    [
+     "earshot + Postgres + volume",
+     "Earshot",
+     "Hobby plan, own backups"
+    ],
+    [
+     "downbeat + Postgres",
+     "Downbeat",
+     ""
+    ],
+    [
+     "spencertownley-site: web",
+     "spencertownley.com",
+     ""
+    ],
+    [
+     "web-production-41f16 + worker",
+     "NimbusWatch",
+     "Worker not running"
+    ],
+    [
+     "web-production-1692a",
+     "Quiz Platform",
+     "Deploys an old branch"
+    ],
+    [
+     "vyg (SQLite volume)",
+     "VYGR Cruises",
+     "Stale since May"
+    ]
+   ]
+  },
+  {
+   "prov": "Supabase",
+   "sub": "Free plan",
+   "cap": [
+    2,
+    2
+   ],
+   "items": [
+    [
+     "allclear · us-west-1",
+     "NimbusWatch",
+     "Active · kept awake by a GitHub Action"
+    ],
+    [
+     "TaskParty · us-west-1",
+     "TaskParty",
+     "Active · migrations 0001–0004"
+    ],
+    [
+     "Make Me A Timeline · us-east-1",
+     "Chronologue?",
+     "Paused"
+    ]
+   ]
+  },
+  {
+   "prov": "Vercel",
+   "sub": "Team scope",
+   "items": [
+    [
+     "taskparty",
+     "TaskParty",
+     "Production deploys ready"
+    ]
+   ]
+  },
+  {
+   "prov": "GitHub Pages and Actions",
+   "sub": "Static hosting and cron",
+   "items": [
+    [
+     "Pages: Merge_Game1",
+     "Smoosh",
+     ""
+    ],
+    [
+     "Pages: jimothy",
+     "JIMOTHY",
+     ""
+    ],
+    [
+     "Pages: makemorepaperclips.com",
+     "MORE.",
+     ""
+    ],
+    [
+     "Pages: spottedzebra.party",
+     "Spotted Zebra",
+     ""
+    ],
+    [
+     "Pages: CruiseNewsYouCanUse",
+     "Cruise News",
+     ""
+    ],
+    [
+     "cron 17 */6 * * * keepalive",
+     "NimbusWatch",
+     "Stops Supabase pausing"
+    ],
+    [
+     "cron 15:17 UTC publish posts",
+     "Spotted Zebra",
+     "Disabled after 60 idle days"
+    ]
+   ]
+  },
+  {
+   "prov": "Shared services",
+   "sub": "Accounts used across projects",
+   "items": [
+    [
+     "Clerk (dev instance, 100-user cap)",
+     "TaskParty, Downbeat, Quiz, Book Builder",
+     "Production instances still needed"
+    ],
+    [
+     "Claude scheduled task: weekday brief",
+     "Cruise News",
+     "Runs 6:52 PT"
+    ],
+    [
+     "Higgsfield",
+     "Smoosh, JIMOTHY, MORE., Townley Creative",
+     "Art and hosting"
+    ],
+    [
+     "Stripe",
+     "Quiz, Book Builder",
+     "Test mode only"
+    ]
+   ]
+  },
+  {
+   "prov": "Domains",
+   "sub": "Known from repos and DNS",
+   "items": [
+    [
+     "framevote.com",
+     "FrameVote",
+     ""
+    ],
+    [
+     "mentionful.com",
+     "Mentionful",
+     ""
+    ],
+    [
+     "betterseobuilder.com",
+     "Mentionful",
+     "Ad landing page"
+    ],
+    [
+     "trydownbeat.app",
+     "Downbeat",
+     ""
+    ],
+    [
+     "vygrcruises.com",
+     "VYGR Cruises",
+     ""
+    ],
+    [
+     "spottedzebra.party",
+     "Spotted Zebra",
+     ""
+    ],
+    [
+     "spencertownley.com",
+     "Personal site",
+     ""
+    ],
+    [
+     "makemorepaperclips.com",
+     "MORE.",
+     ""
+    ],
+    [
+     "townleyphotography.com",
+     "Townley Photography",
+     ""
+    ],
+    [
+     "makethat.wtf",
+     "Unmatched",
+     "Linked from your site; no repo found"
+    ]
+   ]
+  }
+ ],
+ "newIdeas": [
+  [
+   "PhotoVerify",
+   "Location-verified photo web app (May session, no repo)"
+  ],
+  [
+   "Pixel-art web games",
+   "Research session from March with game concepts"
+  ],
+  [
+   "Points Pool",
+   "Linked from your site at points-pool-production.up.railway.app; no repo found"
+  ],
+  [
+   "Cruise data hub",
+   "Combine VYGR fares, Cruise News and Earshot listening into one cruise product"
+  ],
+  [
+   "Project status widget",
+   "Embed live status from this dashboard on spencertownley.com"
+  ]
+ ],
+ "housekeeping": [
+  {
+   "t": "Archive or merge",
+   "items": [
+    [
+     "timeline_web_app.py",
+     "Untouched template; Chronologue covers it. Archive."
+    ],
+    [
+     "Database repo",
+     "Holds 5 unrelated branches. Split Strata and Split the G into their own repos, then archive."
+    ],
+    [
+     "AI_news_site",
+     "Empty. Delete, or fork the Cruise News pipeline into it."
+    ],
+    [
+     "PromoVault",
+     "Superseded. Keep archived."
+    ]
+   ]
+  },
+  {
+   "t": "Overlaps to decide",
+   "items": [
+    [
+     "TaskParty and Strata",
+     "Both are work-management platforms. Pick one to carry forward."
+    ],
+    [
+     "Three Townley sites",
+     "Personal, Photography and Creative overlap. Decide what Creative is for."
+    ],
+    [
+     "Two timeline apps",
+     "Fold the Streamlit app into Chronologue."
+    ],
+    [
+     "Social listening twice",
+     "Cruise News Social Pulse stopped on 6 Oct; feed it from Earshot."
+    ]
+   ]
+  },
+  {
+   "t": "Docs coverage",
+   "items": [
+    [
+     "Full suite",
+     "TaskParty, NimbusWatch, Chronologue, Strata"
+    ],
+    [
+     "Partial",
+     "Smoosh, JIMOTHY, Mentionful, Earshot, Quiz Platform"
+    ],
+    [
+     "README only",
+     "FrameVote, Downbeat, Book Builder, MORE., Cruise News, all content sites"
+    ],
+    [
+     "Suggestion",
+     "Generate a one-page PRD and CLAUDE.md for each README-only project"
+    ]
+   ]
+  }
+ ],
+ "docSuite": [
+  [
+   "01-problem-and-landscape.md",
+   "Why a portfolio control room; compared with GitHub Projects, Linear and Notion"
+  ],
+  [
+   "02-prd.md",
+   "Goals, users, scope, requirements, success measures"
+  ],
+  [
+   "03-user-stories-and-backlog.md",
+   "Stories with acceptance criteria, ordered backlog"
+  ],
+  [
+   "04-roadmap-and-release-plan.md",
+   "Phases 1–3 with exit criteria"
+  ],
+  [
+   "05-technical-architecture.md",
+   "Next.js on Vercel, Neon, Clerk, sync jobs"
+  ],
+  [
+   "06-data-model.md",
+   "Projects, components, sessions, steps, ideas, snapshots"
+  ],
+  [
+   "07-api-specification.md",
+   "Internal routes and server actions"
+  ],
+  [
+   "08-auth-and-permissions.md",
+   "Single owner, optional read-only share link"
+  ],
+  [
+   "09-design-system.md",
+   "Tokens, type, status colors, components"
+  ],
+  [
+   "10-application-screens.md",
+   "Every screen in this mockup, annotated"
+  ],
+  [
+   "11-views-specification.md",
+   "Table, queue, planner, infra map behaviors"
+  ],
+  [
+   "12-integrations-and-sync.md",
+   "GitHub, Vercel, Railway, Cloudflare, Supabase, Claude"
+  ],
+  [
+   "13-project-inventory.md",
+   "The audited seed data for all 26 projects"
+  ],
+  [
+   "14-deployment-and-operations.md",
+   "Environments, secrets, cron, backups"
+  ],
+  [
+   "15-quality-and-test-plan.md",
+   "Unit, integration and Playwright coverage"
+  ],
+  [
+   "16-build-guide.md",
+   "Step-by-step build order for Claude Code"
+  ],
+  [
+   "CLAUDE.md · HANDOFF.md",
+   "Agent rules and session handoff"
+  ]
+ ],
+ "queue": [
+  "zebra",
+  "amanda",
+  "framevote",
+  "photo",
+  "personal",
+  "chrono",
+  "quiz",
+  "book",
+  "nimbus",
+  "cruise",
+  "smoosh",
+  "downbeat",
+  "mentionful",
+  "earshot",
+  "taskparty",
+  "jimothy",
+  "vyg",
+  "strata",
+  "more"
+ ],
+ "auditedAt": "2026-11-10"
+}
