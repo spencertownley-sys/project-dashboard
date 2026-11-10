@@ -10,7 +10,7 @@ The approved mockup (`mockup/index.html`) is the visual source of truth. This do
 - **Dense but legible.** 14 px body, 1.5 line height, tabular numbers everywhere a number is compared.
 - **Numbers are mono.** Scores, hours, dates and counts use Geist Mono or tabular figures so columns align.
 - **No decoration.** 1 px borders, 10 px radius panels, no shadows, no gradients, no illustrations.
-- **No component library.** Components are small local React components styled with Tailwind utilities that reference tokens.
+- **No component library.** Components are small local React components using semantic CSS classes ported from the mockup, all colored by tokens.
 
 ## 2. Typography
 
@@ -18,8 +18,8 @@ The approved mockup (`mockup/index.html`) is the visual source of truth. This do
 
 | Token | Stack | Loaded by |
 |---|---|---|
-| `--f-ui` | `"Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif` | `next/font/google` Geist, weights 400, 500, 600, 700 |
-| `--f-mono` | `"Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace` | `next/font/google` Geist_Mono, weights 400, 500 |
+| `--f-ui` | `var(--font-geist-sans), "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif` | `geist` package (`GeistSans` from `geist/font/sans`), class on `<html>` |
+| `--f-mono` | `var(--font-geist-mono), "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace` | `geist` package (`GeistMono` from `geist/font/mono`) |
 
 ### 2.2 Ramp
 
@@ -65,7 +65,7 @@ Defined on `:root` in `app/globals.css`, overridden for dark under `@media (pref
 | `--stall` / `--stall-bg` | `#9a6400` / `#f8ebcf` | `#f0bf5c` / `#3a2d10` | Status stalled, warnings, capacity meter, needs dot |
 | `--archive` / `--archive-bg` | `#7a7f7c` / `#e7e9e7` | `#a7aeaa` / `#262c28` | Status archive, idea, unknown |
 | `--risk` / `--risk-bg` | `#b3362c` / `#f7e0dd` | `#f08a80` / `#3d1c19` | Sync alerts, CI failing, errors, delete hover |
-| `--note` / `--note-line` / `--note-fg` | `#fff6d6` / `#e7cf7a` / `#5a4710` | `#2f2a14` / `#6b5c22` / `#ecd98f` | "Auth disabled" pill, Phase 3 proposal cards |
+| `--note` / `--note-line` / `--note-fg` | `#fff6d6` / `#e7cf7a` / `#5a4710` | `#2f2a14` / `#6b5c22` / `#ecd98f` | Reserved for Phase 3 proposal cards |
 
 The mockup's annotation banner and lettered tags (A to I) are mockup-only and do not ship.
 
@@ -109,7 +109,7 @@ Pill: inline-flex, gap 5 px, padding 1 px 8 px, radius 99 px, 11.5 px semibold, 
 
 | Component | Spec |
 |---|---|
-| TopBar | Surface background, bottom border. Brand: 26 px accent square with "PC" in mono 12 px, then "Project Control Room" bold. Tabs: Overview, Projects, Infrastructure, Planner, Ideas, Housekeeping; 6 × 10 px padding, 7 px radius, muted text; hover `--sunk`; active `--accent-soft` bg with accent text and `aria-current="page"`. Right side: last sync text (mono 12 px muted), Auth disabled pill when open, Clerk `<UserButton>` in clerk mode. Tabs scroll horizontally on narrow screens. |
+| TopBar | Surface background, bottom border. Brand: 26 px accent square with "PC" in mono 12 px, then "Project Control Room" bold. Tabs: Overview, Projects, Infrastructure, Planner, Ideas, Housekeeping; 6 × 10 px padding, 7 px radius, muted text; hover `--sunk`; active `--accent-soft` bg with accent text and `aria-current="page"`. Right side: Clerk `<UserButton>` in clerk mode, or "local mode · no sign-in" (mono 12 px muted) in open mode. The last sync time sits in the Overview header, not the top bar. Tabs scroll horizontally on narrow screens. |
 | KpiStrip | Six cells separated by 1 px `--line` gaps inside a bordered rounded container; value, label (12 px muted), sub-line (11.5 px faint). |
 | LaneCard | Button-styled card: name (semibold) and score (mono) on one row, progress bar, next open step (12.5 px muted), "N% done" and "N h left" (mono 11.5 px). Hover border accent. Whole card links to the project. |
 | NeedsList | Panel with header "Needs you" and count; rows with an 8 px dot (stall for notes, risk for alerts), project name semibold 13 px, text 13 px muted. |
@@ -123,8 +123,9 @@ Pill: inline-flex, gap 5 px, padding 1 px 8 px, radius 99 px, 11.5 px semibold, 
 | DocDots | 3-column grid; filled dot `●` accent for 1, hollow `○` faint for 0. Labels: PRD, Tech spec, API design, UI/UX notes, Launch checklist, CLAUDE.md. |
 | ProviderCard | Header with provider name and either subtitle or capacity meter ("2 of 2 active" in stall color, 80 px bar). Rows: resource (mono 12 px) and project (12 px muted, right aligned; link when `project_id` is set), note on a second line. |
 | Queue | Ordered rows: index (mono 11 px faint, zero padded), name with hours, ETA (mono 12 px), up and down buttons (24 × 22 px). Remove (×) button; "Add to queue" select under the list. |
+| Signal chip (`.sig`) | 1 × 8 px, radius 6, 11.5 px, line border, muted text. `.good` live colors (CI success, Vercel ready, Supabase active), `.bad` risk colors (CI failure, deploy error, repo not found), `.warn` stall colors (pending, open PRs, archived, paused). Also used for Approved on Housekeeping. |
 | Timeline | Week-scale ticks (mono 10.5 px faint) above rows of 150 px name plus a 16 px track with a 12 px accent bar at 85 percent opacity. |
-| Button | Primary: accent bg, accent-fg text, 8 px radius, 6 × 12 px padding, 13 px semibold. Secondary: surface bg, 1 px line border, fg text. Danger text button: risk color. Disabled at 50 percent opacity. |
+| Button (`.btn`) | Default: surface bg, 1 px line border, fg text, 8 px radius, 6 × 12 px padding, 13 px medium; hover border and text accent. `.primary`: accent bg and border, accent-fg text. `.sm`: 3 × 9 px, 12 px. `.ghost`: transparent, muted text, risk on hover (delete buttons). Disabled at 55 percent opacity. |
 | Field | Label 12.5 px muted above input; input 1 px line border, 8 px radius, 6 × 10 px padding, surface bg; error text 12 px risk below; `aria-invalid` and `aria-describedby`. |
 
 ## 7. Motion
@@ -147,18 +148,8 @@ No animation beyond 120 ms color and border transitions on hover. All transition
 
 ## 10. Token implementation
 
-```css
-@import "tailwindcss";
-:root { --bg: #f5f6f4; /* ...all tokens from section 3... */ --r: 10px; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { /* dark values */ color-scheme: dark; } }
-:root[data-theme="dark"] { /* dark values */ color-scheme: dark; }
-@theme inline {
-  --color-bg: var(--bg); --color-surface: var(--surface); --color-sunk: var(--sunk);
-  --color-line: var(--line); --color-fg: var(--fg); --color-muted: var(--muted);
-  --color-faint: var(--faint); --color-accent: var(--accent); --color-accent-soft: var(--accent-soft);
-  --color-live: var(--live); --color-live-bg: var(--live-bg); /* ...each status pair... */
-  --font-sans: var(--f-ui); --font-mono: var(--f-mono); --radius-panel: var(--r);
-}
-```
+`app/globals.css` starts with `@import "tailwindcss";`, then the three token blocks copied verbatim from the mockup (`:root`, the `prefers-color-scheme: dark` block guarded by `:root:not([data-theme="light"])`, and `:root[data-theme="dark"]`), then component classes ported from the mockup (`.top`, `.tabs`, `.kpis`, `.qcard`, `.inbox`, `.pill` and `.s-*`, `.chip`, `.bar`, `.fbtn`, `.search`, table styles, `.detail`, `.dgrid`, `.kv`, `.steps`, `.arch`, `.docdots`, `.prov`, `.cap`, `.planner`, `.queue`, `.gantt`, `.cols3`, `.list`) plus app additions (`.btn` variants, `.field`, `.form-grid`, `.inline-form`, `.sig` signal chips, `.center` for the setup and not-authorized pages).
 
-Rule: components use token utilities (`bg-surface`, `text-muted`, `border-line`) or `var(--token)`; no raw hex values outside `globals.css`.
+Decision: the app uses these semantic classes rather than Tailwind utility strings, so the mockup's CSS carries over one to one; Tailwind 4 is available for one-off layout utilities. No `@theme` mapping is needed for that.
+
+Rule: colors come only from the tokens; no raw hex values outside the token blocks in `globals.css`.

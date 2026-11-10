@@ -6,194 +6,116 @@ Version 1.0, 10 Nov 2026. Owner: Engineering.
 
 | Surface | Callers | Auth |
 |---|---|---|
-| Pages (Server Components) | The owner's browser | Clerk session + owner check (document 08) |
-| Server actions (`app/actions.ts`) | Client Components in this app | `requireOwner()` inside every action |
-| `GET /api/health` | Uptime checks, the owner | Public; returns no project data |
-| `GET /api/cron/sync` | Vercel Cron | `Authorization: Bearer $CRON_SECRET` |
+| Pages (Server Components) | The owner's browser | Clerk session plus `requireOwner()` (document 08) |
+| Server actions (`app/actions.ts`) | Forms and Client Components in this app | `requireOwner()` first in every action |
+| `GET /api/health` | Uptime checks, Playwright readiness | Public; returns no data |
+| `GET /api/cron/sync` | Vercel Cron, manual `curl` | `Authorization: Bearer $CRON_SECRET` |
 
-There is no public REST API, no webhooks and no API keys. Reads happen in Server Components through `lib/queries.ts`; writes happen only through the 12 server actions below.
+There is no public REST API, no webhooks and no API keys. Reads happen in Server Components through `lib/queries.ts`; writes happen only through the server actions below.
 
-## 2. Page routes and query parameters
+## 2. Page routes
 
-| Route | Query parameters | Notes |
-|---|---|---|
-| `/` | none | Overview |
-| `/projects` | `f` filter key (`all`, `live`, `preview`, `building`, `stalled`, `archive`, `SaaS`, `Game`, `site`), `q` search text, `sort` (`name`, `status`, `pct`, `hours`, `score`, `last`), `dir` (`asc`, `desc`) | Defaults `f=all`, `sort=score`, `dir=desc`. Unknown values fall back to defaults. |
-| `/projects/[id]` | none | 404 page (Next `notFound()`) for an unknown id |
-| `/infrastructure` | none | |
-| `/planner` | none | |
-| `/ideas` | none | |
-| `/housekeeping` | none | |
-| `/sign-in` | Clerk managed | Catch-all `[[...sign-in]]` |
+| Route | Notes |
+|---|---|
+| `/` | Overview |
+| `/projects` | Filter, search and sort are client state (not in the URL; decision) |
+| `/projects/[id]` | `notFound()` for an unknown id; title is the id |
+| `/infrastructure`, `/planner`, `/ideas`, `/housekeeping` | |
+| `/sign-in` | Clerk catch-all `[[...sign-in]]`; redirects to `/` when Clerk is not configured |
+| `/not-authorized` | Signed in but not an owner; redirects to `/` when Clerk is not configured |
+| `/setup` | Shown in production without Clerk keys (the proxy rewrites app routes here with status 503) |
 
 ## 3. Route handlers
 
 ### 3.1 GET /api/health
 
-Public, `Cache-Control: no-store`. Runs `SELECT 1`.
-
-| Status | Body |
-|---|---|
-| 200 | `{ "status": "ok", "db": "ok", "auth": "clerk" \| "open" \| "locked", "time": "2026-11-10T13:23:04.512Z" }` |
-| 503 | `{ "status": "error", "db": "error", "auth": "...", "time": "..." }` |
-
-`auth` is the auth mode from document 08, section 2, useful when diagnosing a setup page. No counts, names or errors are returned.
+Public, `dynamic = "force-dynamic"`. Returns `200 { "ok": true }`. It does not touch the database (decision: it is a liveness check used by Playwright's `webServer.url`; database health shows on the Overview).
 
 ### 3.2 GET /api/cron/sync
 
-Node runtime, `maxDuration = 60`, `Cache-Control: no-store`. Excluded from Clerk in `proxy.ts`.
+`dynamic = "force-dynamic"`, `maxDuration = 60`. Public to the proxy; protected by the bearer secret.
 
 | Condition | Status | Body |
 |---|---|---|
-| `CRON_SECRET` unset or empty | 503 | `{ "error": "CRON_SECRET is not configured" }` |
-| Header missing or not equal to `Bearer <CRON_SECRET>` (constant-time compare) | 401 | `{ "error": "unauthorized" }` |
-| Run completed (with or without per-source errors) | 200 | `{ "ok": true, "runId": 14, "summary": { ... } }` (`ok` mirrors `sync_runs.ok`) |
-| `runSync()` threw before finishing | 500 | `{ "ok": false, "runId": 14, "error": "message" }` and the run row is finished with `ok = false` |
+| `CRON_SECRET` unset, header missing, or header not equal to `Bearer <CRON_SECRET>` (constant-time compare, length checked first) | 401 | `{ "error": "Unauthorized" }` |
+| Run finished, every source ok or skipped | 200 | `{ "id": 14, "ok": true, "summary": { ... } }` |
+| Run finished, at least one source with status `error` | 207 | `{ "id": 15, "ok": false, "summary": { ... } }` |
 
-A run with per-source errors still returns 200 so Vercel Cron logs it as delivered; the failure is visible in `sync_runs` and on the Overview (decision). The summary shape is in document 12, section 6.
+The summary shape is in document 12, section 6. An unexpected exception inside `runSync` surfaces as a 500 from Next.js and leaves the run row with `finished_at` null.
 
-## 4. Server action contract
+## 4. Server action conventions
 
-All actions live in `app/actions.ts` (`'use server'`), take a single plain object (or nothing), and return:
+All actions live in `app/actions.ts` (`'use server'`).
 
-```ts
-type ActionResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; code: 'UNAUTHORIZED' | 'VALIDATION' | 'NOT_FOUND' | 'INTERNAL';
-      message: string; fields?: Record<string, string> };
-```
+1. `await requireOwner()` first. A non-owner never gets an error value: `requireOwner()` redirects to `/setup`, `/sign-in` or `/not-authorized`.
+2. Form actions parse `FormData` with zod. Blank strings become null for nullable fields (`blankToNull`).
+3. Write (in a transaction where noted).
+4. `revalidatePath(path ?? '/', 'layout')`: `/` for most actions so every page refreshes; `/housekeeping` and `/planner` for their own actions.
 
-Every action, in order:
-1. `requireOwner()`; on failure return `UNAUTHORIZED` ("Sign in as the owner to make changes").
-2. Validate input with `lib/validation.ts`; on failure return `VALIDATION` with per-field messages in `fields`.
-3. Perform the write (transaction where noted).
-4. `revalidatePath('/', 'layout')` (decision: one call refreshes every page; the app is small).
-5. Return `ok: true` with the data below. Unexpected exceptions are logged and returned as `INTERNAL` with a generic message.
-
-Strings are trimmed before validation. For nullable text fields an empty string means null.
+Only `updateProject` and `runSyncNow` return a value to the UI: `type FormState = { ok: boolean; message: string } | null`. Other form actions return nothing; invalid input is ignored after HTML validation (`required`, `min`, `max`, `type=url`) has already blocked it in the browser (decision). `saveQueue` and `setHoursPerWeek` call `z.parse`, so invalid input throws and reaches the error boundary.
 
 ## 5. Server actions
 
-### 5.1 updateProject
+| Action | Input | Effect | Returns |
+|---|---|---|---|
+| `updateProject(prev, form)` | FormData, used with `useActionState` | Update project fields (5.1) and `updated_at` | `{ ok: true, message: "Saved" }` or `{ ok: false, message: <first zod issue> }` |
+| `toggleStep(stepId, nowDone)` | number, boolean | Transaction: no-op if unchanged; else `done`, `done_at`, and `hours_left = hoursAfterToggle(hours_left, step.hours, nowDone)`, `updated_at` | void |
+| `addStep(form)` | `projectId`, `title` (1 to 300), `hours` (0 to 1000, default 1) | Insert at `max(position) + 1`; `hours_left` unchanged | void |
+| `deleteStep(stepId)` | number | Delete; `hours_left` unchanged | void |
+| `addIdea(form)` | `projectId` (blank = parking lot), `title` (1 to 200), `detail` (≤ 1000) | Insert | void |
+| `toggleIdeaStar(id, starred)` | number, boolean | Set `starred` | void |
+| `deleteIdea(id)` | number | Delete | void |
+| `addSession(form)` | `projectId`, `title` (1 to 200), `url` (optional, valid URL) | Insert | void |
+| `deleteSession(id)` | number | Delete a session link | void |
+| `setHousekeepingDecision(id, decision)` | number, `pending` \| `approved` \| `skipped` | Set decision; `decided_at = now()` or null for pending. Records only | void |
+| `saveQueue(ids)` | string[] (≤ 500) | Transaction: `queue_position = index` (0-based) for each id; null for every other project when the list is non-empty | void |
+| `addToQueue(projectId)` | string | `queue_position = max + 1` | void |
+| `removeFromQueue(ids)` | string[] | `queue_position = null` | void |
+| `setHoursPerWeek(hours)` | integer 1 to 80 | Upsert `settings.hours_per_week` | void |
+| `runSyncNow()` | none | `runSync(db)` | `{ ok, message }`, message like `github updated 57 · vercel updated 1 · supabase skipped` |
 
-Input: `{ id: string; status?; pct?; hoursLeft?; value?; needs?; summary?; claudeProjectUrl?; githubRepo?; vercelProject?; supabaseRef? }`. Only provided keys change.
+`addToQueue`, `removeFromQueue` and `deleteSession` go beyond the 12 actions in the original spec; they support the planner's add and remove and removing a wrong session link.
 
-| Field | Rule | Message |
+### 5.1 updateProject fields
+
+| Field (form name) | Rule | Message |
 |---|---|---|
-| `status` | one of the seven `project_status` values | "Pick a status" |
-| `pct` | integer 0 to 100, or null | "Enter a whole number from 0 to 100" |
-| `hoursLeft` | number ≥ 0 and ≤ 10000, or null | "Enter hours as 0 or more" |
-| `value` | integer 1 to 5, or null | "Value is 1 to 5" |
-| `needs` | ≤ 500 chars, or null | "Keep it under 500 characters" |
-| `summary` | ≤ 1000 chars | "Keep it under 1000 characters" |
-| `claudeProjectUrl` | `https://` URL ≤ 500 chars, or null | "Paste the full https link" |
-| `githubRepo` | `^[A-Za-z0-9-]+/[A-Za-z0-9._-]+$`, or null | "Use owner/name" |
-| `vercelProject` | 1 to 100 chars of `[A-Za-z0-9._-]`, or null | "Use the Vercel project name or id" |
-| `supabaseRef` | `^[a-z]{20}$`, or null | "A Supabase ref is 20 lowercase letters" |
-
-Output: `{ project: Project }`. Sets `updated_at`. Errors: `NOT_FOUND` for an unknown id.
-
-### 5.2 toggleStep
-
-Input: `{ stepId: number; done: boolean }`.
-Transaction: load step and project with `FOR UPDATE`; if `step.done === done`, return the current state unchanged (idempotent, so a double click never subtracts twice; decision). Otherwise set `done`, `done_at = done ? now() : null`; if `hours_left` is not null set it to `max(0, hours_left − hours)` when ticking or `hours_left + hours` when unticking; set `updated_at`.
-Output: `{ stepId, done, hoursLeft: number | null }`. Errors: `NOT_FOUND`.
-
-### 5.3 addStep
-
-Input: `{ projectId: string; title: string (1 to 200); hours: number (0 to 500) }`.
-Inserts with `position = max(position) + 1` (0 when none), `done = false`. Does not change `hours_left` (decision).
-Output: `{ step: Step }`. Errors: `NOT_FOUND` for the project, `VALIDATION`.
-
-### 5.4 deleteStep
-
-Input: `{ stepId: number }`. Deletes the row. Does not change `hours_left`, whether or not the step was done (decision).
-Output: `{ stepId }`. Errors: `NOT_FOUND`.
-
-### 5.5 addIdea
-
-Input: `{ projectId: string | null; title: string (1 to 200); detail?: string (0 to 1000) }`. `projectId = null` adds to the new-project parking lot.
-Output: `{ idea: Idea }`. Errors: `NOT_FOUND` when `projectId` is given and unknown.
-
-### 5.6 toggleIdeaStar
-
-Input: `{ ideaId: number }`. Flips `starred`.
-Output: `{ ideaId, starred }`. Errors: `NOT_FOUND`.
-
-### 5.7 deleteIdea
-
-Input: `{ ideaId: number }`.
-Output: `{ ideaId }`. Errors: `NOT_FOUND`.
-
-### 5.8 addSession
-
-Input: `{ projectId: string; title: string (1 to 200); url?: string | null }` (`url` must be `https://` when given).
-Output: `{ session: ClaudeSession }`. Errors: `NOT_FOUND`, `VALIDATION`.
-
-### 5.9 setHousekeepingDecision
-
-Input: `{ itemId: number; decision: 'pending' | 'approved' | 'skipped' }`. Sets `decided_at = now()` for approved or skipped, null for pending. Records only; never acts externally.
-Output: `{ item: HousekeepingItem }`. Errors: `NOT_FOUND`, `VALIDATION`.
-
-### 5.10 saveQueue
-
-Input: `{ projectIds: string[] }` in planner order, at most 100, no duplicates, every id must exist.
-Transaction: set `queue_position = index + 1` for listed ids and null for every other project.
-Output: `{ queue: string[] }`. Errors: `VALIDATION` ("Duplicate project in queue", "Unknown project: x").
-
-The Planner calls it after every move, add or remove with the full new order (decision: no separate Save button).
-
-### 5.11 setHoursPerWeek
-
-Input: `{ hours: number }`, integer 1 to 80. Upserts `settings.hours_per_week`.
-Output: `{ hoursPerWeek }`. Errors: `VALIDATION` ("Hours per week is 1 to 80").
-
-The slider (4 to 40) calls it on commit (pointer up or keyboard change), not on every input event.
-
-### 5.12 runSyncNow
-
-Input: none. Calls `runSync({ trigger: 'manual' })` and waits for it.
-Output: `{ runId, ok, summary }`. Errors: `UNAUTHORIZED`, `INTERNAL` if the run threw (the run row is still finished with `ok = false`).
+| `id` | required | |
+| `name` | 1 to 120 chars | "Name is required" |
+| `category` | ≤ 60 chars | |
+| `status` | one of the seven statuses | |
+| `pct` | blank (null) or integer 0 to 100 | "Use a whole number" for decimals |
+| `hoursLeft` | blank or number 0 to 10000 | |
+| `value` | blank or integer 1 to 5 | |
+| `summary` | ≤ 2000 chars | |
+| `needs` | blank or ≤ 2000 chars | |
+| `claudeProjectUrl` | blank or a URL | "Claude project link must be a full URL" |
+| `githubRepo` | blank or `^[\w.-]+/[\w.-]+$` | "GitHub repo must look like owner/name" |
+| `vercelProject`, `supabaseRef` | blank or ≤ 2000 chars | |
+| `urls`, `risks` | one per line, trimmed, blanks dropped | |
+| `hostTags` | comma separated, trimmed, blanks dropped | |
 
 ## 6. Object shapes
 
+Types are inferred from the schema (`typeof projects.$inferSelect` and so on) and exported from `lib/db/schema.ts`: `Project`, `Step`, `Idea`, `ClaudeSession`, `Component`, `HousekeepingItem`, `Signal`, `SyncRun`. Key shapes:
+
 ```ts
 type Status = 'live' | 'preview' | 'building' | 'stalled' | 'archive' | 'idea' | 'unknown';
-
-type Project = {
-  id: string; name: string; repo: string; githubRepo: string | null;
-  category: string; status: Status; pct: number | null; hoursLeft: number | null;
-  value: number | null; summary: string; needs: string | null;
-  risks: string[]; urls: string[]; hostTags: string[];
-  arch: { Client: string; Host: string; Data: string; Auth: string; Services: string } | null;
-  docs: { prd: 0|1; tech: 0|1; api: 0|1; ui: 0|1; launch: 0|1; claude: 0|1 } | null;
-  docNote: string; claudeProjectUrl: string | null; vercelProject: string | null;
-  supabaseRef: string | null; lastPush: string | null /* YYYY-MM-DD */;
-  queuePosition: number | null; createdAt: Date; updatedAt: Date;
-};
-type Step = { id: number; projectId: string; title: string; hours: number;
-  done: boolean; doneAt: Date | null; position: number };
-type Idea = { id: number; projectId: string | null; title: string; detail: string;
-  starred: boolean; createdAt: Date };
-type ClaudeSession = { id: number; projectId: string; title: string; url: string | null };
-type Component = { id: number; provider: string; resource: string; projectLabel: string;
-  projectId: string | null; note: string; position: number };
-type HousekeepingItem = { id: number; group: 'archive' | 'overlap' | 'docs'; title: string;
-  detail: string; decision: 'pending' | 'approved' | 'skipped'; decidedAt: Date | null };
-type Signal = { projectId: string; source: string; key: string; value: unknown; observedAt: Date };
-type SyncRun = { id: number; startedAt: Date; finishedAt: Date | null; ok: boolean;
-  summary: SyncSummary; error: string | null };
+type Arch = { Client?: string; Host?: string; Data?: string; Auth?: string; Services?: string };
+type DocFlags = Record<'prd' | 'tech' | 'api' | 'ui' | 'launch' | 'claude', 0 | 1>;
+type SyncSummary = Record<string, { status: 'ok' | 'skipped' | 'error'; updated: number; message?: string }>;
+type Alert = { projectId: string; projectName: string;
+  kind: 'needs' | 'ci' | 'deploy' | 'database' | 'repo'; text: string; severity: 'warn' | 'risk' };
 ```
 
 ## 7. Read functions (`lib/queries.ts`)
 
-Internal, server-only, not an HTTP surface: `getProjects()`, `getProject(id)` (with steps, ideas, sessions, signals), `getStepsByProject()`, `getComponents()`, `getIdeas()`, `getHousekeeping()`, `getSettings()`, `getLatestSyncRun()`, `getSignals()`. Pages compose them with `lib/rules.ts`.
+Internal and server-side, not an HTTP surface: `listProjects` (by name), `getProject(id)` (with steps, sessions, ideas, signals, components), `firstOpenSteps` (map of project id to first open step title), `listAlerts`, `listSignals`, `listComponents`, `listIdeas`, `listNewProjectIdeas`, `listHousekeeping`, `getSetting(key, fallback)`, `setSetting(key, value)`, `lastSyncRun`.
 
 ## 8. Phase 3 additions (planned)
 
 | Action or route | Purpose |
 |---|---|
 | `GET /api/cron/review` (bearer `CRON_SECRET`, weekly) | Run the Claude review and Monday plan draft |
-| `acceptProposal({ proposalId })`, `rejectProposal({ proposalId })` | Apply or dismiss a proposal |
-| `dismissPlan({ planId })` | Hide the Monday plan card |
-| `deleteSession({ sessionId })` | Remove a Claude session link |
+| `acceptProposal(id)`, `rejectProposal(id)` | Apply or dismiss a proposal |
+| `dismissPlan(id)` | Hide the Monday plan card |
