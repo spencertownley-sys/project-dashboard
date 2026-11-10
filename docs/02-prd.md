@@ -63,8 +63,8 @@ Each requirement has an identifier for traceability into user stories (document 
 
 ### 4.1 Access
 
-- FR-1 [P1] The app MUST require Clerk sign-in and MUST admit only a user whose primary email address appears in `OWNER_EMAILS` (comma separated, case-insensitive, trimmed). Any other signed-in user MUST see a "not authorized" page with a sign-out button.
-- FR-2 [P1] When Clerk keys are absent, the app MUST run without auth only when `NODE_ENV !== 'production'` or `ALLOW_NO_AUTH=1`, and MUST show a visible "Auth disabled" notice in the top bar. In production without keys it MUST fail closed with a setup page.
+- FR-1 [P1] The app MUST require Clerk sign-in and MUST admit only a user whose primary email address appears in `OWNER_EMAILS` (comma separated, case-insensitive, trimmed). Any other signed-in user MUST be sent to a "not authorized" page (`/not-authorized`) with a sign-out button. (Built check: any of the user's Clerk emails; see 9.2.)
+- FR-2 [P1] When Clerk keys are absent, the app MUST run without auth only when `NODE_ENV !== 'production'` or `ALLOW_NO_AUTH=1`, and MUST show a visible "local mode · no sign-in" notice in the top bar. In production without keys it MUST fail closed with a setup page (`/setup`, status 503).
 - FR-3 [P1] Every server action MUST re-check the owner before reading or writing.
 
 ### 4.2 Overview
@@ -79,7 +79,7 @@ Each requirement has an identifier for traceability into user stories (document 
 - FR-8 [P1] The Projects page MUST list all projects in a table with name, repo, status, completion, hours left, finish score, host tags and last push.
 - FR-9 [P1] The table MUST support status filters, category filters and a text search over name, repo, host tags and category, and sorting by name, status, completion, hours left, finish score and last push.
 - FR-10 [P1] The project detail page MUST show where it lives (URLs, repo, last push), Claude sessions (with add), architecture (Client, Host, Data, Auth, Services), documents coverage, next steps, ideas and risks.
-- FR-11 [P1] The detail page MUST provide an edit form for status, pct, hours left, value, needs note, summary, Claude project URL, GitHub repo, Vercel project and Supabase ref.
+- FR-11 [P1] The detail page MUST provide an edit form for status, pct, hours left, value, needs note, summary, Claude project URL, GitHub repo, Vercel project and Supabase ref. The built form also edits name, category, host tags, URLs and risks.
 - FR-12 [P1] Next steps MUST support tick and untick, add and delete. Ticking a step MUST subtract its hours from the project's hours left (floor 0); unticking MUST add them back.
 - FR-13 [P2] The detail page MUST show the latest live signals for the project (GitHub, Vercel, Supabase) with their observed time.
 
@@ -97,17 +97,17 @@ Each requirement has an identifier for traceability into user stories (document 
 
 ### 4.6 Ideas and housekeeping
 
-- FR-20 [P1] The Ideas page MUST group feature ideas by project and show a new-project parking lot; the owner MUST be able to add, star and delete ideas in either.
+- FR-20 [P1] The Ideas page MUST group feature ideas by project and show a new-project parking lot; the owner MUST be able to add, star and delete ideas. Built: parking-lot ideas are added, starred and deleted on `/ideas`; feature ideas are added and deleted on the project page and listed read-only on `/ideas` (see 9.2).
 - FR-21 [P1] The Housekeeping page MUST list archive, overlap and docs items, each with Approve and Skip, and an Undo back to pending. Decisions MUST NOT change anything outside the database.
 
 ### 4.7 Data and sync
 
-- FR-22 [P1] `npm run db:seed` MUST load `data/inventory.json` into an empty database and MUST do nothing when projects already exist.
+- FR-22 [P1] `npm run db:seed` MUST load `data/inventory.json` into an empty database and MUST do nothing when projects already exist. The same `seedIfEmpty` also runs in the Vercel build and on the first request against a local PGlite database.
 - FR-23 [P1] `npm run db:migrate` MUST apply drizzle-kit generated SQL from `/drizzle`; the Vercel build MUST run it before `next build`.
 - FR-24 [P2] A sync run MUST call the GitHub, Vercel and Supabase adapters, skip (not fail) any adapter whose token is missing, write signals, update `last_push` from GitHub, and record per-source counts and errors in `sync_runs`.
 - FR-25 [P2] Vercel Cron MUST call `GET /api/cron/sync` daily at `23 13 * * *` UTC with `Authorization: Bearer $CRON_SECRET`; any other caller MUST get 401.
 - FR-26 [P2] Sync alerts MUST be raised for: GitHub default-branch CI failing, latest Vercel production deployment in ERROR, Supabase project INACTIVE.
-- FR-27 [P1] `GET /api/health` MUST return service and database status without auth and without exposing data.
+- FR-27 [P1] `GET /api/health` MUST return `200 { ok: true }` without auth and without exposing data (liveness only).
 
 ### 4.8 Phase 3 (planned)
 
@@ -127,7 +127,7 @@ Each requirement has an identifier for traceability into user stories (document 
 | NFR-6 | WCAG 2.2 AA: contrast from the token palette in both themes, keyboard operation of every control, visible focus ring, `aria-pressed` on filter toggles, labelled checkboxes. |
 | NFR-7 | Usable at 360 px width with no horizontal page scroll (tables scroll inside their panel). |
 | NFR-8 | Light and dark themes from the mockup tokens, following the OS setting. |
-| NFR-9 | TypeScript strict; lint, typecheck, unit and integration tests and build pass in CI on every push. |
+| NFR-9 | TypeScript strict; lint, typecheck, unit and database tests, and the e2e smoke run (which builds the app) pass in CI on every push to `main` and every pull request. |
 | NFR-10 | Runs locally with zero configuration (PGlite, auth open in development). |
 | NFR-11 | Free-tier hosting: Vercel Hobby, Neon free, Clerk free. |
 
@@ -135,12 +135,12 @@ Each requirement has an identifier for traceability into user stories (document 
 
 | Rule | Definition |
 |---|---|
-| Finish score | value × (pct ÷ 100) ÷ hours_left × 100, rounded to one decimal. Null when value, pct or hours_left is null or zero. |
+| Finish score | value × (pct ÷ 100) ÷ hours_left × 100, rounded to one decimal. Null when value, pct or hours_left is null or zero (built: pct 0 gives 0; see 9.2). |
 | Active project | status not `archive` and not `idea`. |
 | Quick wins | Active, score not null, hours_left ≤ 15. Top 4 by score. |
 | Launch pushes | Active, score not null, value ≥ 4 and 15 < hours_left ≤ 60. Top 4 by score. |
 | Steady builds | Active, score not null, hours_left > 15 and value < 4. Top 4 by score. |
-| Lane tie break | Equal scores order by queue_position ascending (nulls last), then name ascending (decision). |
+| Lane tie break | Equal scores keep name order (decision; projects load sorted by name). |
 | Stale | last_push more than 30 days before today (UTC). |
 | Step toggle | Done: hours_left = max(0, hours_left − step.hours). Undone: hours_left + step.hours. |
 | Planner ETA | today + ceil(cumulative hours ÷ hours_per_week) × 7 days. |
@@ -171,16 +171,24 @@ No analytics product is used (single user). Metrics are read from the database: 
 6. No component library. The mockup mentioned shadcn/ui; the spec supersedes it with Tailwind 4 plus CSS custom-property tokens.
 7. Project detail is a route (`/projects/[id]`), not the side panel the mockup suggested.
 8. The mockup's "optional read-only share link" is dropped; the app is owner-only.
-9. The seed leaves `github_repo`, `vercel_project`, `supabase_ref` and `claude_project_url` null because the inventory has no such fields; the owner fills them in from the edit form (suggested values in document 13, section 5).
+9. The inventory has no link fields, so the seed derives them: `github_repo = spencertownley-sys/<first word of repo>` for every project except PromoVault, `vercel_project = taskparty` for TaskParty, and `supabase_ref` for TaskParty, NimbusWatch and Chronologue. `claude_project_url` stays null (document 13, section 5).
 10. Adding or deleting a step does not change `hours_left`; only ticking and unticking does. Steps never change `pct`.
-11. All date arithmetic ("today", stale, ETA) uses UTC.
+11. "Today" is the request time; days since a push count from noon UTC on that date; displayed dates are formatted in UTC.
 12. Theme follows the OS setting; no manual toggle in Phases 1 and 2.
+13. Server action input is validated with zod 4.
+14. Projects filter, search and sort are client state, not URL parameters.
+15. Needs you adds a fourth sync alert beyond the spec's three: "GitHub repo not found or not readable with the sync token".
+16. The cron route answers 207 (not 500) when a sync finishes with source errors, and 401 when `CRON_SECRET` is unset.
+17. The Vercel build seeds an empty production database (`npm run vercel-build` = migrate, seed, build).
+18. Queue positions are 0-based; the planner also has add-to-queue and remove-from-queue actions, and session links can be deleted (`addToQueue`, `removeFromQueue`, `deleteSession`).
 
 ### 9.2 Open
 
 1. Custom domain for the dashboard (needed before moving Clerk from its development to its production instance).
 2. Phase 3 model choice and weekly review cost ceiling.
-3. Whether to delete Claude session links from the UI (no action exists in Phases 1 and 2).
+3. Owner check: the spec says the primary email; the build accepts any of the user's Clerk emails. Tighten the code or accept.
+4. Finish score with pct 0: the spec says null; the build returns 0. Only AI News Site (an idea project) is affected.
+5. Starring feature ideas: the spec allows it on `/ideas`; the build only stars parking-lot ideas. Add a star toggle to the project page or the Ideas page.
 
 ## 10. Approval
 

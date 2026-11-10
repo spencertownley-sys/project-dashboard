@@ -16,20 +16,20 @@ Version 1.0, 10 Nov 2026. Owner: Product.
 Scope:
 - Next.js 16.4 scaffold, Tailwind 4 with mockup tokens, Geist fonts, top bar with tabs.
 - Drizzle schema for all nine tables (the Phase 2 tables are created now so there is a single initial migration), PGlite locally, Neon in production.
-- `npm run db:migrate` and `npm run db:seed` from `data/inventory.json`.
+- `npm run db:migrate` and `npm run db:seed` from `data/inventory.json` (also run by `vercel-build`; local PGlite migrates and seeds itself).
 - Clerk auth, owner-only gate, auth-disabled and setup modes, `proxy.ts`.
 - Screens: Overview (KPIs, lanes, Needs you from notes), Projects, Project detail with edit form, steps, sessions, Infrastructure, Planner, Ideas, Housekeeping, Sign-in.
-- Server actions: updateProject, toggleStep, addStep, deleteStep, addIdea, toggleIdeaStar, deleteIdea, addSession, setHousekeepingDecision, saveQueue, setHoursPerWeek.
+- Server actions: updateProject, toggleStep, addStep, deleteStep, addIdea, toggleIdeaStar, deleteIdea, addSession, deleteSession, setHousekeepingDecision, saveQueue, addToQueue, removeFromQueue, setHoursPerWeek.
 - `GET /api/health`.
 - Vitest unit and PGlite integration tests, Playwright smoke spec, GitHub Actions CI.
 
 Exit gate:
 - [ ] Production deployment on Vercel with Neon; owner signs in; a second Clerk account sees the not-authorized page.
 - [ ] 26 projects, 101 steps, 67 ideas, 32 sessions, 39 components and 12 housekeeping items present after seed; second seed run changes nothing.
-- [ ] Overview lanes and KPIs match document 13, section 2 exactly.
+- [ ] Overview lanes and KPIs match document 13, section 1 exactly.
 - [ ] Ticking and unticking a step updates hours left, score and planner ETA.
 - [ ] CI green: lint, typecheck, test, build.
-- [ ] Playwright smoke passes locally against PGlite in auth-open mode.
+- [ ] Playwright smoke (desktop and phone) passes in CI against a fresh PGlite build.
 
 ### Phase 2: Live sync (about 4 days, in build)
 
@@ -46,9 +46,9 @@ Exit gate:
 - [ ] With all three tokens set, a run completes in under 60 s and records `ok = true`.
 - [ ] With no tokens set, a run records all three sources as skipped and `ok = true`.
 - [ ] A deliberately wrong `github_repo` records one per-project error and the rest succeed.
-- [ ] The cron route returns 401 without the bearer token and 503 when `CRON_SECRET` is unset.
+- [ ] The cron route returns 401 without the bearer token or when `CRON_SECRET` is unset, 200 on a clean run and 207 when a source errors.
 - [ ] The first scheduled run appears in `sync_runs` the next morning (13:23 UTC, 05:23 Pacific standard time).
-- [ ] The owner has filled `github_repo` for every project with a real repository and `vercel_project`/`supabase_ref` where they apply (document 13, section 5).
+- [ ] The owner has checked the seeded link fields (document 13, section 5), fixed any repo the first sync reports as not found, and granted the token access to private repos (NestCraft).
 
 ### Phase 3: AI assist and more sources (about 3 days, planned)
 
@@ -58,7 +58,7 @@ Scope:
 - Review screen: accept or reject each proposal; accepting applies it through the same code paths as `updateProject`, `addStep` and risk edits.
 - Monday plan draft: a short markdown plan from lanes, queue head, Needs you and accepted proposals, shown on the Overview until dismissed.
 - Railway GraphQL adapter (`RAILWAY_TOKEN`) and Cloudflare API adapter (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`).
-- Backlog C items: delete session link, manual theme toggle, Playwright in CI.
+- Backlog items: star toggle for feature ideas, manual theme toggle, loading skeletons, server-action and closed-mode tests.
 
 Exit gate:
 - [ ] A weekly run produces proposals for every active project with a repo, costs under the agreed ceiling (open question, document 02), and changes nothing until accepted.
@@ -87,7 +87,7 @@ Phase 1 and Phase 2 are built from the same specification at the same time; Phas
 
 Release mechanics:
 - Every push to `main` deploys to production on Vercel; pull requests get preview deployments (document 14).
-- Migrations run in the Vercel build (`npm run db:migrate && next build`), so a release with a schema change is one push.
+- Migrations run in the Vercel build (`npm run vercel-build` = migrate, seed if empty, build), so a release with a schema change is one push.
 - Versions are tagged in Git (`v0.1.0`) and noted in a `CHANGELOG.md` at the repo root.
 - Rollback is Vercel "Instant Rollback" to the previous deployment. Migrations are additive in every planned release, so the previous build still runs against the newer schema.
 
@@ -100,7 +100,7 @@ Release mechanics:
 | Clerk application (development instance is fine on `*.vercel.app`) | Phase 1 auth | Create app, disable sign-ups, copy keys |
 | `OWNER_EMAILS` | Phase 1 auth | Set in Vercel env |
 | `CRON_SECRET` | Phase 2 cron | Generate a random 32+ character string |
-| `GITHUB_TOKEN` (fine-grained, read-only metadata, pull requests, checks) | Phase 2 | Create in GitHub settings |
+| `GITHUB_TOKEN` (fine-grained, read-only Metadata, Pull requests, Checks, Contents) | Phase 2 | Create in GitHub settings |
 | `VERCEL_TOKEN`, optional `VERCEL_TEAM_ID` | Phase 2 | Create in Vercel account settings |
 | `SUPABASE_ACCESS_TOKEN` | Phase 2 | Create in Supabase account tokens |
 | Anthropic API key, Railway token, Cloudflare token and account id | Phase 3 | Create when Phase 3 starts |

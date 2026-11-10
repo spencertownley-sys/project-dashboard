@@ -15,14 +15,15 @@ There is one persona, the owner (document 02, section 2), so every story is writ
 
 Acceptance criteria for US-01 and US-02:
 - Given `OWNER_EMAILS="a@example.com, B@Example.com"` and a signed-in user whose primary email is `b@example.com`, the Overview renders.
-- Given the same setting and a user whose primary email is `c@example.com`, every app route renders the not-authorized page, which shows `c@example.com`, a "Sign out" button, and no project data.
-- Given `OWNER_EMAILS` unset or empty with Clerk keys present, every signed-in user sees the not-authorized page (fail closed).
+- Given the same setting and a user whose only email is `c@example.com`, every app route redirects to `/not-authorized`, which says the dashboard is private, offers "Sign out", and loads no project data.
+- Given `OWNER_EMAILS` unset or empty with Clerk keys present, every signed-in user is sent to `/not-authorized` (fail closed).
+- Built behavior: a user passes if any of their Clerk emails is listed; the spec says the primary email only (open question, document 02).
 - A signed-out visitor to any app route is redirected to `/sign-in`.
 
 Acceptance criteria for US-03 and US-04:
-- With no Clerk keys and `NODE_ENV=development`, all routes render and the top bar shows "Auth disabled".
-- With no Clerk keys, `NODE_ENV=production` and `ALLOW_NO_AUTH` unset, every app route renders the setup page listing the missing variables; every server action returns `UNAUTHORIZED`; `/api/health` still returns 200.
-- With no Clerk keys, `NODE_ENV=production` and `ALLOW_NO_AUTH=1`, the app runs open and shows "Auth disabled".
+- With no Clerk keys and `NODE_ENV=development`, all routes render and the top bar shows "local mode · no sign-in"; the local PGlite database migrates and seeds itself on the first request.
+- With no Clerk keys, `NODE_ENV=production` and `ALLOW_NO_AUTH` unset, every app route shows "Sign-in isn't set up yet" with status 503, naming the variables to add; server actions redirect to `/setup`; `/api/health` still returns 200.
+- With no Clerk keys, `NODE_ENV=production` and `ALLOW_NO_AUTH=1`, the app runs open (this is how the e2e suite runs).
 
 ## Epic 2: Overview
 
@@ -37,14 +38,15 @@ Acceptance criteria for US-03 and US-04:
 Acceptance criteria for US-11 (seed data, document 13):
 - Quick wins shows, in order, Spotted Zebra 45.0, Amanda Williams Portfolio 35.0, Townley Photography 26.7, FrameVote 20.8.
 - Launch pushes shows spencertownley.com 21.2, Quiz Platform 14.3, Book Builder 10.7, TaskParty 6.0.
-- Steady builds shows Chronologue 12.8, Cruise News You Can Use 10.5, Smoosh 8.5, NimbusWatch 8.0 (NimbusWatch and Downbeat tie at 8.0; the tie break is queue_position ascending with nulls last, then name, and NimbusWatch is queued 9th against Downbeat's 12th).
+- Steady builds shows Chronologue 12.8, Cruise News You Can Use 10.5, Smoosh 8.5, Downbeat 8.0 (Downbeat and NimbusWatch tie at 8.0; ties keep name order).
 - Archive and idea projects never appear; projects with a null score never appear.
 - Clicking a card opens `/projects/[id]`.
 
 Acceptance criteria for US-14:
-- Given a GitHub signal `ci = "failure"` for TaskParty, Needs you shows "TaskParty: CI failing on main" (using the stored default branch) with the risk dot.
-- Given a Vercel signal `production.state = "ERROR"`, Needs you shows "Latest production deployment failed".
-- Given a Supabase signal `status = "INACTIVE"`, Needs you shows "Supabase project is paused (INACTIVE)".
+- Given a GitHub `ci` signal with conclusion `failure` on `main` for TaskParty, Needs you shows TaskParty with "CI is failing on main" and the risk dot.
+- Given a Vercel `deployment` signal with state `ERROR`, Needs you shows "Latest Vercel production deploy failed".
+- Given a Supabase `project` signal with status `INACTIVE`, Needs you shows "Supabase project is paused".
+- Given a GitHub `repo` signal `{ missing: true }`, Needs you shows "GitHub repo not found or not readable with the sync token".
 - When the next sync records a passing state, the alert disappears.
 
 ## Epic 3: Projects
@@ -64,18 +66,19 @@ Acceptance criteria for US-21:
 - Status filters: All, Live, Preview, Building, Stalled, Archive and ideas (archive, idea and unknown). Category filters: SaaS, Games (`Game`), Sites (category contains "Content", "site" or "Portfolio"). One filter is active at a time; All is the default.
 - Search is case-insensitive substring over name, repo, host tags and category; it combines with the active filter.
 - With no matches, the table shows "No projects match. Clear the search or pick another filter."
-- Filter, search and sort are kept in the URL (`?f=&q=&sort=&dir=`), so reload and back keep them.
+- Filter, search and sort are client state and reset on reload (decision).
 
 Acceptance criteria for US-24:
-- Given Spotted Zebra with hours_left 6 and step "Add 10–20 gig photos" (1.5 h), ticking it sets hours_left to 4.5, `done = true`, `done_at` set; unticking returns hours_left to 6 and clears `done_at`.
-- Given hours_left 1 and a 3 h step, ticking sets hours_left to 0; unticking sets it to 3 (documented floor behavior).
+- Given Spotted Zebra with hours_left 6 and step "Fix the “(2027 Guide)” post title" (0.5 h), ticking it sets hours_left to 5.5, `done = true`, `done_at` set; unticking returns hours_left to 6 and clears `done_at`.
+- Given hours_left 2 and a 4 h step, ticking sets hours_left to 0; unticking sets it to 4 (documented floor behavior).
+- Ticking an already-done step changes nothing.
 - Given hours_left null, ticking changes only the step.
 - The finish score, lanes and planner ETAs reflect the new hours on the next render.
 
 Acceptance criteria for US-23:
-- pct accepts an integer 0 to 100 or empty (null); hours accepts a number ≥ 0 or empty; value accepts 1 to 5 or empty.
-- GitHub repo must match `owner/name`; Supabase ref must be 20 lowercase letters; Claude project URL must be an `https://` URL; all may be empty.
-- Invalid fields show inline messages and nothing is saved.
+- pct accepts a whole number 0 to 100 or empty (null); hours accepts 0 to 10000 or empty; value accepts 1 to 5 or empty. The browser blocks out-of-range numbers before submit.
+- GitHub repo must look like `owner/name`; the Claude project link must be a full URL; Vercel project and Supabase ref are free text; all may be empty.
+- On success the form shows "Saved"; on a validation failure it shows the first message and saves nothing.
 
 ## Epic 4: Infrastructure
 
@@ -96,7 +99,7 @@ Acceptance criteria for US-23:
 
 Acceptance criteria for US-40 (seed queue, 12 h/week, today 10 Nov 2026):
 - Spotted Zebra (6 h, cumulative 6) and Amanda Williams Portfolio (cumulative 10) show 17 Nov; FrameVote (cumulative 23) shows 24 Nov; MORE. (cumulative 800) shows 22 Feb 2028.
-- Changing the slider to 24 h/week saves `settings.hours_per_week = 24` and FrameVote shows 17 Nov.
+- Changing the slider to 24 h/week saves `settings.hours_per_week = 24` on release and FrameVote shows Nov 17.
 
 ## Epic 6: Ideas and housekeeping
 
@@ -118,8 +121,8 @@ Acceptance criteria for US-40 (seed queue, 12 h/week, today 10 Nov 2026):
 | US-65 | As the owner, Railway and Cloudflare deployments and resources sync once I add tokens. | S | 3 | FR-30 |
 
 Acceptance criteria for US-62:
-- With only `GITHUB_TOKEN` set, a run records `vercel.status = "skipped"` and `supabase.status = "skipped"` with reasons, `ok = true` if GitHub had no errors.
-- A 404 for one repo records an error for that project, continues with the rest, and sets `ok = false`.
+- With only `GITHUB_TOKEN` set, a run records `vercel` and `supabase` as `skipped` with "No token set", and `ok = true` if GitHub had no errors.
+- A 404 for one repo writes a `repo = { missing: true }` signal (a Needs you alert) and continues; other HTTP errors are recorded in the source message and set `ok = false`.
 
 ## Prioritized backlog
 
@@ -140,7 +143,7 @@ Ordered by build sequence (document 16). Phase 1 and Phase 2 are in build; Phase
 | 11 | Planner queue, hours per week, timeline | Phase 1 | M | US-40 to US-43 |
 | 12 | Ideas page | Phase 1 | M | US-50, US-51 |
 | 13 | Housekeeping page | Phase 1 | M | US-52 |
-| 14 | Health route, CI, Playwright smoke | Phase 1 | M | NFR-9 |
+| 14 | Health route, CI with Playwright smoke | Phase 1 | M | NFR-9 |
 | 15 | Signals and sync_runs, sync orchestrator | Phase 2 | M | US-61, US-62 |
 | 16 | GitHub adapter | Phase 2 | M | US-61 |
 | 17 | Vercel adapter | Phase 2 | M | US-61 |
@@ -152,8 +155,8 @@ Ordered by build sequence (document 16). Phase 1 and Phase 2 are in build; Phase
 | 23 | Monday plan draft | Phase 3 | S | US-64 |
 | 24 | Railway GraphQL adapter | Phase 3 | S | US-65 |
 | 25 | Cloudflare API adapter | Phase 3 | S | US-65 |
-| 26 | Delete Claude session link; manual theme toggle | Phase 3 | C | US-26 |
-| 27 | Playwright smoke in CI | Phase 3 | C | NFR-9 |
+| 26 | Star toggle for feature ideas; manual theme toggle; loading skeletons | Phase 3 | C | US-51 |
+| 27 | Server action and closed-mode tests (document 15, section 6) | Phase 3 | S | NFR-9 |
 
 ## Cut line
 

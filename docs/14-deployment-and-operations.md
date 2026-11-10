@@ -135,7 +135,7 @@ Production has no Clerk keys (or only one). Add both and redeploy. Do not set `A
 | Needs you: "GitHub repo not found or not readable with the sync token" | Fix `github_repo` in the edit form, or grant the token that repo (NestCraft is private) |
 | `HTTP 401 from api.github.com/...` | Token expired or revoked; create a new fine-grained token, update Vercel env, redeploy |
 | `HTTP 404 from api.vercel.com/v9/projects/...` | Check `vercel_project` and `VERCEL_TEAM_ID` |
-| Signal `Supabase not_found` on a project | Fix `supabase_ref` |
+| Signal chip "Supabase not found" on a project | Fix `supabase_ref` |
 | `HTTP 403` or `429` from GitHub | Rate limit; wait (should not happen at this volume) |
 
 ### 10.4 Cron not running
